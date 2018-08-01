@@ -14,7 +14,7 @@ end
 %spikesSTA = spikes;
 %spikesSTA(ind) = [];
 
-[STA, ~] = genSTA(spikesSTA,STIM,win,fps);
+[STA, ~] = genSTA(spikes,STIM,win,fps);
 
 if nargin > 3
     t = [0:20]; %Not sure what these time bins should be...

@@ -1,4 +1,4 @@
-function [LOCSon,LOCSoff] = TC_Select_noGauss(MNum, h1, nfreq, fig)
+function [LOCSon,LOCSoff] = TC_Select_noGauss(MNum, h1, nfreq, amps, fig)
 % This function is meant to locate nfreq frequencies with highest firing rates
 % for each cell
 %INPUTS:
@@ -6,6 +6,7 @@ function [LOCSon,LOCSoff] = TC_Select_noGauss(MNum, h1, nfreq, fig)
 %   h1 = List of files with extra 0 ammended, but not including filter
 %   number
 %   nfreq = number of frequencies of interest
+%   amps = amplitude indices you want to average across (array)
 %   fig = 1 to display figures, 0 to not display figures.
 %
 %OUTPUTS:
@@ -14,6 +15,7 @@ function [LOCSon,LOCSoff] = TC_Select_noGauss(MNum, h1, nfreq, fig)
 
 LOCSon = NaN(size(h1,1),nfreq);
 LOCSoff = NaN(size(h1,1),nfreq);
+nAmps = length(amps);
 
 cd(['D:\Spikes\M' num2str(MNum) '\TCs']);
 for v = 1:size(h1, 1); 
@@ -21,17 +23,27 @@ for v = 1:size(h1, 1);
     %Load and smooth tuning curves:
     load(['data\' h1(v,:)]);
     
-    for u = 1:8
-        T1(:, u) = SmoothGaus(TC1.TCmat{1}(:, u), 3);
+    if exist('TC1','var') %Added this statement because partway through this project I started renaming this variable.
+        for u = 1:nAmps
+            T1(:, u) = SmoothGaus(TC1.TCmat{1}(:, amps(u)), 3);
+        end
+
+        for u = 1:nAmps
+            T2(:, u) = SmoothGaus(TC2.TCmat{1}(:, amps(u)), 3);
+        end
+    else
+        for u = 1:nAmps
+            T1(:, u) = SmoothGaus(TCon.TCmat{1}(:, amps(u)), 3);
+        end
+
+        for u = 1:nAmps
+            T2(:, u) = SmoothGaus(TCoff.TCmat{1}(:, amps(u)), 3);
+        end
     end
     
-    for u = 1:8
-        T2(:, u) = SmoothGaus(TC2.TCmat{1}(:, u), 3);
-    end
-    
-    %Take mean across top 3 amplitudes
-    laser = mean(T1(:,6:8),2);
-    nolaser = mean(T2(:,6:8),2);
+    %Take mean across top desired amplitudes
+    laser = mean(T1(:,1:nAmps),2);
+    nolaser = mean(T2(:,1:nAmps),2);
     
     %Find indices for top nfreq frequencies in nolaser condition
     [~,IDXoff] = sort(nolaser,'descend');

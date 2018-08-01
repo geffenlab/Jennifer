@@ -9,7 +9,7 @@ function h = plotSTA(x,y,STA,kwidth,lims)
 
 
 if ~exist('kwidth','var')
-    kwidth = 0;
+    kwidth = 0.1;
 end
 smoothSTA = imgaussfilt(STA,kwidth);
 

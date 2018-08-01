@@ -13,7 +13,7 @@ function [sta nSpikes] = genSTA(spikes,S,w,fps);
 % convert spike times to stim bins
 spikeT = ceil(spikes*fps);
 
-sta = zeros(size(S,1),w/(1/fps)+1);;
+sta = zeros(size(S,1),w/(1/fps)+1);
 for i = 1:length(spikeT)
     spikeStim = S(:,spikeT(i) - ((w*fps)):spikeT(i));
     sta = sta + spikeStim;
