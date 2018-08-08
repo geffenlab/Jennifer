@@ -21,7 +21,7 @@ end
 %smoothSTA = imfilter(STA,kernel,'replicate');
 
 
-h = surf(time,fliplr(freq),smoothSTA);
+h = surf(time,flipud(freq),smoothSTA);
 set(gca,'YScale','log');
 set(h,'linestyle','none')
 
