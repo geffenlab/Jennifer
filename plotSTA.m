@@ -1,4 +1,4 @@
-function h = plotSTA(x,y,STA,kwidth,lims)
+function h = plotSTA(time,freq,STA,kwidth,lims)
 
 % function h = plotSTA(x,y,STA,kwidth,lims)
 % 
@@ -20,10 +20,16 @@ end
 %kernel = fspecial('gaussian',kwidth,1);
 %smoothSTA = imfilter(STA,kernel,'replicate');
 
-h = imagesc(x,y,smoothSTA,lims);
-set(gca,'ydir','normal');
-%set(gca,'yscale','log');
+
+h = surf(time,fliplr(freq),smoothSTA);
+set(gca,'YScale','log');
+set(h,'linestyle','none')
+
 xlabel('Time (ms)');
 ylabel('Frequency (kHz)');
-%xlim([-100 0]);
+
+axis tight;
+view(2)
+
+caxis(lims);
 colormap(jet);
