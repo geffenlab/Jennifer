@@ -31,13 +31,13 @@ end
 
 
 %Separate spike times by tone frequency and amplitdue
-fList = sort(unique(afo.freqOrder));
-aList = sort(unique(afo.ampOrder));
+fList = sort(unique(StimOrder(2,:)));
+aList = sort(unique(StimOrder(3,:)));
 SpkTime = cell(length(fList),length(aList),nRep);
 for i = 1:length(StimOrder)
     a = find(fList == StimOrder(2,i));
     b = find(aList == StimOrder(3,i));
     for j = 1:nRep    
-        SpkTime{a,b,j} = ResponseT{j,i};
+        SpkTime{a,b,j} = [SpkTime{a,b,j} ResponseT{j,i}];
     end
 end
