@@ -426,7 +426,8 @@ FRon = cell(1,length(MNum));
 FRoff = cell(1,length(MNum));
 baseVAR = cell(1,length(MNum));
 for u = 1:length(MNum)
-    idx = IDX{u};
+    a = ismember(GOODCELL{u},GOODCELLall,'rows');
+    idx = IDX{u}(a);
     if ~isempty(idx)
     FRon{u} = FR_LASER{u}(idx,:);
     FRoff{u} = FR_NOLASER{u}(idx,:);
@@ -437,17 +438,13 @@ LaserThresh = 1; %Threshold
 baseVARall = vertcat(baseVAR{:})';
 
 %Calculate spontaneous activity
-spontOFFall(isnan(spontOFFall)) = [];
-spontONall(isnan(spontONall)) = [];
-spontRatio1 = spontONall - (spontOFFall + LaserThresh*baseVARall);
-spontRatio2 = spontONall - (spontOFFall - LaserThresh*baseVARall);
+spontRatio1 = spontONall2 - (spontOFFall2 + LaserThresh*baseVARall);
+spontRatio2 = spontONall2 - (spontOFFall2 - LaserThresh*baseVARall);
 SigCellspontUP = find(spontRatio1 > 0); %Decrease activity with laser ON
 SigCellspontDOWN = find(spontRatio2 < 0); %Increase activity with laser ON
 
-magOFFall(isnan(magOFFall)) = [];
-magONall(isnan(magONall)) = [];
-magRatio1 = magONall - (magOFFall + LaserThresh*baseVARall);
-magRatio2 = magONall - (magOFFall - LaserThresh*baseVARall);
+magRatio1 = magONall2 - (magOFFall2 + LaserThresh*baseVARall);
+magRatio2 = magONall2 - (magOFFall2 - LaserThresh*baseVARall);
 SigCellmagUP = find(magRatio1 > 0);
 SigCellmagDOWN = find(magRatio2 < 0);
 
@@ -466,25 +463,25 @@ end
 %Re-plot ratios to see which have been identified as significant.
 figure; 
 subplot(3,2,1);
-scatter(spontOFFall, spontONall,25,'filled')
-hold on; line([0 max([[spontOFF{:}], [spontON{:}]])], [0 max([[spontOFF{:}], [spontON{:}]])],'Color','k','LineStyle', '--');
+scatter(spontOFFall2, spontONall2,25,'filled')
+hold on; line([0 max([[spontOFFall2], [spontONall2]])], [0 max([[spontOFFall2], [spontONall2]])],'Color','k','LineStyle', '--');
 %hold on; line([0 31.98], [0 31.98]);
-scatter(spontOFFall(SigCellspontDOWN), spontONall(SigCellspontDOWN),25,'m','filled')
-scatter(spontOFFall(SigCellspontUP), spontONall(SigCellspontUP),25,'y','filled')
+scatter(spontOFFall2(SigCellspontDOWN), spontONall2(SigCellspontDOWN),25,'m','filled')
+scatter(spontOFFall2(SigCellspontUP), spontONall2(SigCellspontUP),25,'y','filled')
 hold off; axis square
-set(gca, 'xlim', [0 max([[spontOFF{:}], [spontON{:}]])], 'ylim', [0 max([[spontOFF{:}], [spontON{:}]])],'TickDir','out')
+set(gca, 'xlim', [0 max([[spontOFFall2], [spontONall2]])], 'ylim', [0 max([[spontOFFall2], [spontONall2]])],'TickDir','out')
 xlabel('LASER OFF'); ylabel('LASER ON')
 title(['Spontaneous activity (Hz)'])
 box off
 
 subplot(3,2,2);
-scatter(magOFFall, magONall,25,'filled')
-hold on; line([0 max([magOFFall, magONall])], [0 max([magOFFall, magONall])],'Color','k','LineStyle', '--');
+scatter(magOFFall2, magONall2,25,'filled')
+hold on; line([0 max([magOFFall2, magONall2])], [0 max([magOFFall2, magONall2])],'Color','k','LineStyle', '--');
 %hold on; line([0 63.56], [0 63.56]);
-scatter(magOFFall(SigCellmagDOWN), magONall(SigCellmagDOWN),25,'m','filled')
-scatter(magOFFall(SigCellmagUP), magONall(SigCellmagUP),25,'y','filled')
+scatter(magOFFall2(SigCellmagDOWN), magONall2(SigCellmagDOWN),25,'m','filled')
+scatter(magOFFall2(SigCellmagUP), magONall2(SigCellmagUP),25,'y','filled')
 hold off; axis square
-set(gca, 'xlim', [0 max([magOFFall, magONall])], 'ylim', [0 max([magOFFall, magONall])],'TickDir','out')
+set(gca, 'xlim', [0 max([magOFFall2, magONall2])], 'ylim', [0 max([magOFFall2, magONall2])],'TickDir','out')
 xlabel('LASER OFF')
 title('Tone-evoked response magnitude (Hz)')
 box off;
@@ -523,7 +520,7 @@ set(gcf,'PaperSize',[1000 1200]);
 set(gcf,'Position',[0 0 1000 1200]);
 suptitle(TITLE)
 cd(FigOutput)
-print(['laser_' TITLE],'-dpdf','-r400')
+%print(['laser_' TITLE],'-dpdf','-r400')
 
 %Identify which cells show a laser effect in either direction
 IDXall = horzcat(IDX{:});
