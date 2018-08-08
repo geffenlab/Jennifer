@@ -31,6 +31,16 @@ CellQ = cell(1,length(MNum));
 all_LASERSPIKE2 = cell(1,length(MNum)); 
 all_NOLASERSPIKE2 = cell(1,length(MNum));
 
+afo5 = load('D:\Code\TuningCurve\R407_pars'); %Load stimulus parameters
+Win = 0.24; %Window (in seconds) around start of tone to look for spikes
+trialdur = afo5.interval+afo5.soundLen;
+dur = trialdur*length(afo5.freqOrder);
+Time = 0:trialdur:dur; %Each repetition is 400 seconds long, each trial is 500ms long
+Time = Time(1:end-1);
+
+StimOrder_Laser = [Time(2:2:end); afo5.freqOrder(2:2:end); afo5.ampOrder(2:2:end)];
+StimOrder_NoLaser = [Time(1:2:end); afo5.freqOrder(1:2:end); afo5.ampOrder(1:2:end)];
+
 
 for u = 1:length(MNum)  
     %Pull out data files for mice and session numbers of interest
@@ -47,8 +57,7 @@ for u = 1:length(MNum)
     
     %Step 2: Separate spikes by tone trial (separated by trial, frequency,
     %amplitude, and laser vs no laser)
-    afo5 = load('D:\Code\TuningCurve\R407_pars'); %Load stimulus parameters
-    Win = 0.24; %Window (in seconds) around start of tone to look for spikes
+
 
     %Separate out spikes based on if during laser trials vs no laser trials
     LASER_SPIKE = cell(1,size(h,1));
@@ -59,7 +68,8 @@ for u = 1:length(MNum)
         load(['D:\Spikes\M' num2str(MNum(u)) '\SpikeMat\R407F'  h(v,5:q) '.mat']); 
         CellQ{u}(v) = CellInfo(6);
 
-        [SpkTime_Laser, SpkTime_NoLaser, ~, ~] = SpikeTime(afo5,SpikeData,nRep,400,Win);
+        SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep,Time, Win);
+        SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep,Time, Win);
 
         %Select those in bins around top frequencies and top 3 amplitudes
         LASER_SPIKE{v} = SpkTime_Laser(LOCSon{u}(v,:),amps,:);
@@ -303,6 +313,14 @@ FR_NOLASER_ALL = [];
 h1 = GOODCELLall;
 afo5 = load('D:\Code\TuningCurve\R407_pars'); %Load stimulus parameters
 Win = 0.24; %Window (in seconds) around start of tone to look for spikes
+trialdur = afo5.interval+afo5.soundLen;
+dur = trialdur*length(afo5.freqOrder);
+Time = 0:trialdur:dur; %Each repetition is 400 seconds long, each trial is 500ms long
+Time = Time(1:end-1);
+
+StimOrder_Laser = [Time(2:2:end); afo5.freqOrder(2:2:end); afo5.ampOrder(2:2:end)];
+StimOrder_NoLaser = [Time(1:2:end); afo5.freqOrder(1:2:end); afo5.ampOrder(1:2:end)];
+
 
 SpkTime_LaserAll = cell(size(h1,1),nFreq);
 SpkTime_NoLaserAll = cell(size(h1,1),nFreq);
@@ -313,7 +331,8 @@ for v = 1:size(h1,1) %for filter 3, v = 47 peak is at index 2
     q = match(end);
     load(['D:\Spikes\M' h1(v,10:13) '\SpikeMat\R407F'  h1(v,5:q-1) '.mat']); 
 
-    [SpkTime_Laser, SpkTime_NoLaser, ~, ~] = SpikeTime(afo5,SpikeData,nRep,400,Win);
+    SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep,Time, Win);
+    SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep,Time, Win);
     for j = 1:nFreq
         SpkTime_LaserAll{v,j} = SpkTime_Laser(j,6:8,:);
         SpkTime_NoLaserAll{v,j} = SpkTime_NoLaser(j,6:8,:);
@@ -540,8 +559,16 @@ LASERSidxON = nan(1,numcell);
 LASERSidxOFF = nan(1,numcell);
 
 
-
+afo5 = load('D:\Code\TuningCurve\R407_pars'); %Load stimulus parameters
 Win = 0.24; %Window (in seconds) around start of tone to look for spikes
+trialdur = afo5.interval+afo5.soundLen;
+dur = trialdur*length(afo5.freqOrder);
+Time = 0:trialdur:dur; %Each repetition is 400 seconds long, each trial is 500ms long
+Time = Time(1:end-1);
+
+StimOrder_Laser = [Time(2:2:end); afo5.freqOrder(2:2:end); afo5.ampOrder(2:2:end)];
+StimOrder_NoLaser = [Time(1:2:end); afo5.freqOrder(1:2:end); afo5.ampOrder(1:2:end)];
+
 
 SpkTime_LaserAll = cell(size(h1,1),nFreq);
 SpkTime_NoLaserAll = cell(size(h1,1),nFreq);
@@ -552,7 +579,8 @@ for v = 1:size(h1,1)
     q = match(end);
     load(['D:\Spikes\M' h1(v,10:13) '\SpikeMat\R407F'  h1(v,5:q-1) '.mat']); 
 
-    [SpkTime_Laser, SpkTime_NoLaser, ~, ~] = SpikeTime(afo5,SpikeData,nRep,400,Win);
+    SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep,Time, Win);
+    SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep,Time, Win);
     for j = 1:nFreq
         SpkTime_LaserAll{v,j} = SpkTime_Laser(j,amps,:);
         SpkTime_NoLaserAll{v,j} = SpkTime_NoLaser(j,amps,:);
