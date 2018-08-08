@@ -33,11 +33,11 @@ Win = 0.24;
 
 
 figure;
-for n = 1:length(MNum)
+for n = 1%:length(MNum)
     cd(['D:\Spikes\M' num2str(MNum(n)) '\TCs']);
     h = dir('data\TC003*01.mat');
     
-    for v = 1:length(h)
+    for v = 1%:length(h)
         
 % I. Pure tone response timecourse
         for i = 1:length(tLaserON) %Number of different laser conditions
@@ -136,13 +136,13 @@ for n = 1:length(MNum)
         set(gcf,'PaperUnits','points');
         set(gcf,'PaperSize',[2000 1000]);
         set(gcf,'Position',[0 0 2000 1000]);
-        print('-djpeg',['pics\Tuning-' h(v).name(7:end-13)]);
+%        print('-djpeg',['pics\Tuning-' h(v).name(7:end-13)]);
 
     end
 end
 
 %% ************************************************************************
-%  *****                  2. MAKE PLOTS FOR DRCs                      *****
+%  *****                  3. MAKE PLOTS FOR DRCs                      *****
 %  ************************************************************************
 
 LaserOn1 = 0.5;
@@ -161,52 +161,52 @@ for i = 1:nFiles
 end
 
 for n = 1:length(MNum)
-cd(['D:\Spikes\M' num2str(MNum(n))]);
-h = dir('SpikeMat\DRC001_LEFT-01*.mat');
+    cd(['D:\Spikes\M' num2str(MNum(n))]);
+    h = dir('SpikeMat\DRC001_LEFT-01*.mat');
 
-nFiles = 8;
+    nFiles = 8;
 
-for v = 1:length(h)
-    for i = 1:nFiles
+    for v = 1:length(h)
+        for i = 1:nFiles
 
-        load(['SpikeMat\DRC001_LEFT-0' num2str(i) '-' h(v).name(16:end)]); %Load spike times 
+            load(['SpikeMat\DRC001_LEFT-0' num2str(i) '-' h(v).name(16:end)]); %Load spike times 
 
-        spikes = SpikeData(3,:);
-        spikes(spikes >= stimdur) = [];
-        SpikeTmod = mod(spikes,1);
-        SpikeFR(i,:) = smoothFRx4(SpikeTmod,stimdur,0.001,[0 1],5);
+            spikes = SpikeData(3,:);
+            spikes(spikes >= stimdur) = [];
+            SpikeTmod = mod(spikes,1);
+            SpikeFR(i,:) = smoothFRx4(SpikeTmod,stimdur,0.001,[0 1],5);
+        end
+
+        subplot(3,2,[1 2]);
+        plot(mean(SpikeFR,1),'k')
+        line([LaserOn1*1000 LaserOn1*1000],[0 max(mean(SpikeFR,1))],'Color','g')
+        line([(LaserOn1+LaserDur)*1000 (LaserOn1+LaserDur)*1000], [0 max(mean(SpikeFR,1))], 'Color','g');
+        set(gca,'TickDir','out','XTick',0:100:1000,'XTickLabel',0:0.1:1)
+        xlabel('Time (s)'); ylabel('Firing rate (Hz)')
+        box off; axis tight;
+
+
+        load(['TCs\data\DRC001-' h(v).name(16:end)])
+        %Plot STRFs
+        MM = max(max([STAon;STAoff1;STAoff2;STAoff3]));
+        mm = min(min([STAon;STAoff1;STAoff2;STAoff3]));
+
+        suptitle(['DRCs (DRC001): ' h(v).name(16:end-4) ' ' num2str(CellInfo(end))])
+        subplot(3,2,3); plotSTA([-0.1:0.005:0],StimParams{1}.params.freqs/1000,STAon,1,[mm,MM]); colorbar;
+        title('Laser On')
+        subplot(3,2,4); plotSTA([-0.1:0.005:0],StimParams{1}.params.freqs/1000,STAoff1,1,[mm,MM]); colorbar;
+        title('Laser Off 0.25 - 0.5')
+        subplot(3,2,5); plotSTA([-0.1:0.005:0],StimParams{1}.params.freqs/1000,STAoff2,1,[mm,MM]); colorbar;
+        title('Laser Off 0.5 - 0.75')
+        subplot(3,2,6); plotSTA([-0.1:0.005:0],StimParams{1}.params.freqs/1000,STAoff3,1,[mm,MM]); colorbar;
+        title('Laser Off 0.75 - 1')
+
+        set(gcf,'PaperPositionMode','auto');         
+        set(gcf,'PaperOrientation','portrait');
+        set(gcf,'PaperUnits','points');
+        set(gcf,'PaperSize',[1000 1000]);
+        set(gcf,'Position',[0 0 1000 1000]);
+
+        print('-djpeg',['TCs\pics\DRC-'  h(v).name(16:end-4) '_STRF.jpg']);
     end
-    
-    subplot(3,2,[1 2]);
-    plot(mean(SpikeFR,1),'k')
-    line([LaserOn1*1000 LaserOn1*1000],[0 max(mean(SpikeFR,1))],'Color','g')
-    line([(LaserOn1+LaserDur)*1000 (LaserOn1+LaserDur)*1000], [0 max(mean(SpikeFR,1))], 'Color','g');
-    set(gca,'TickDir','out','XTick',0:100:1000,'XTickLabel',0:0.1:1)
-    xlabel('Time (s)'); ylabel('Firing rate (Hz)')
-    box off; axis tight;
-    
-        
-    load(['TCs\data\DRC001-' h(v).name(16:end)])
-    %Plot STRFs
-    MM = max(max([STAon;STAoff1;STAoff2;STAoff3]));
-    mm = min(min([STAon;STAoff1;STAoff2;STAoff3]));
-    
-    suptitle(['DRCs (DRC001): ' h(v).name(16:end-4) ' ' num2str(CellInfo(end))])
-    subplot(3,2,3); plotSTA([-0.1:0.005:0],StimParams{1}.params.freqs/1000,STAon,1,[mm,MM]); colorbar;
-    title('Laser On')
-    subplot(3,2,4); plotSTA([-0.1:0.005:0],StimParams{1}.params.freqs/1000,STAoff1,1,[mm,MM]); colorbar;
-    title('Laser Off 0.25 - 0.5')
-    subplot(3,2,5); plotSTA([-0.1:0.005:0],StimParams{1}.params.freqs/1000,STAoff2,1,[mm,MM]); colorbar;
-    title('Laser Off 0.5 - 0.75')
-    subplot(3,2,6); plotSTA([-0.1:0.005:0],StimParams{1}.params.freqs/1000,STAoff3,1,[mm,MM]); colorbar;
-    title('Laser Off 0.75 - 1')
-    
-    set(gcf,'PaperPositionMode','auto');         
-    set(gcf,'PaperOrientation','portrait');
-    set(gcf,'PaperUnits','points');
-    set(gcf,'PaperSize',[1000 1000]);
-    set(gcf,'Position',[0 0 1000 1000]);
-    
-    print('-djpeg',['TCs\pics\DRC-'  h(v).name(16:end-4) '_STRF.jpg']);
-end
 end
