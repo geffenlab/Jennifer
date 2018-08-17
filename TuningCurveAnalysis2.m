@@ -89,14 +89,14 @@ for u = 1:length(MNum)
                 LASER_SPIKE2{v}{w} = [sort(LASER_SPIKE{v,n}{w}); w*ones(1,length(LASER_SPIKE{v,n}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
                 SpikeDataLaser{v} = [SpikeDataLaser{v} LASER_SPIKE2{v}{w}]; %Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
             end
-            FR_LASER{u,n}(v,:) = smoothFRx4(SpikeDataLaser{v},numel(LASER_SPIKE{v,n}),0.001,[-Win Win],5);
+            FR_LASER{u,n}(v,:) = smoothFRx4(SpikeDataLaser{v},numel(LASER_SPIKE{v,n})*stimInfo.repeats,0.001,[-Win Win],5);
             all_LASERSPIKE2{u,n} = LASER_SPIKE2;
             
             for w = 1:numel(NOLASER_SPIKE{v,n})
                 NOLASER_SPIKE2{v}{w} = [sort(NOLASER_SPIKE{v,n}{w}); w*ones(1,length(NOLASER_SPIKE{v,n}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
                 SpikeDataNoLaser{v} = [SpikeDataNoLaser{v} NOLASER_SPIKE2{v}{w}]; %Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
             end
-            FR_NOLASER{u,n}(v,:) = smoothFRx4(SpikeDataNoLaser{v},numel(NOLASER_SPIKE{v,n}),0.001,[-Win, Win],5);
+            FR_NOLASER{u,n}(v,:) = smoothFRx4(SpikeDataNoLaser{v},numel(NOLASER_SPIKE{v,n})*stimInfo.repeats,0.001,[-Win, Win],5);
             all_NOLASERSPIKE2{u,n} = NOLASER_SPIKE2;
         end
         
@@ -135,7 +135,7 @@ for u = 1:length(MNum)
     numcellA = size(allCELL{u},1);
     idxGOOD{u} = NaN(1,numcellA);    
     for j = 1:numcellA
-        if CellQ{u}(j) <= 4 && ... %Use only good multi-units and single units
+        if CellQ{u}(j) <= 4 && CellQ > 0 && ... %Use only good multi-units and single units
             mean(FR_NOLASER{u,1}(j,240:290)) > (2*std(FR_NOLASER{u,1}(j,145:235)) + mean(FR_NOLASER{u,1}(j,145:235))); %Only use cells with ave tone-evoked FR higher than 2 std's above spontaneous
         
             idxGOOD{u}(j) = 1; %Identify usable cells
