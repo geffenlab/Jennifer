@@ -1,4 +1,4 @@
-function [SpkTime] = SpikeTime(StimOrder,SpikeData,nRep,Time,Win);
+function [SpkTime] = SpikeTime(StimOrder,SpikeData,nRep,Win);
 %Function to extract spike times separated by frequency and amplitude for
 %pure tone stimuli.
 %
@@ -15,7 +15,7 @@ function [SpkTime] = SpikeTime(StimOrder,SpikeData,nRep,Time,Win);
 %   SpkTime = 3-D cell array (nFreq x nAmp x nRep) containing separated
 %             spike times.
 
-
+Time = StimOrder(1,:);
 %Find number of spikes per trial in time window of tone onset
 ResponseT = cell(nRep,length(Time));
 for i = 1:nRep

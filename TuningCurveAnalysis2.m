@@ -21,8 +21,8 @@ disp('*******************************************************************');
 
 %Pre-allocate variables
 allCELL = cell(1,length(MNum));
-FR_LASER = cell(1,length(MNum)); 
-FR_NOLASER = cell(1,length(MNum));
+FR_LASER = cell(length(MNum),3); 
+FR_NOLASER = cell(length(MNum),3);
 LOCSoff = cell(1,length(MNum));
 LOCSon = cell(1,length(MNum));
 CellQ = cell(1,length(MNum));
@@ -71,12 +71,12 @@ for u = 1:length(MNum)
             load(['D:\Spikes\M' num2str(MNum(u)) '\SpikeMat\TC003_LEFT-0' num2str(n) h(v,6:q-10) '.mat']); 
             CellQ{u}(v) = CellInfo(6);
 
-            SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep,Time, Win);
-            SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep,Time, Win);
+            SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep, Win);
+            SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep, Win);
 
             %Select those in bins around top frequencies and top 3 amplitudes
-            LASER_SPIKE{v,n} = SpkTime_Laser(LOCSon{u}(v,:),amps,:);
-            NOLASER_SPIKE{v,n} = SpkTime_NoLaser(LOCSoff{u}(v,:),amps,:);
+            LASER_SPIKE{v} = SpkTime_Laser(LOCSon{u}(v,:),amps,:);
+            NOLASER_SPIKE{v} = SpkTime_NoLaser(LOCSoff{u}(v,:),amps,:);
         end
 
         %Step 3: Calculate and smooth firing rate for laser and no laser conditions
@@ -85,19 +85,19 @@ for u = 1:length(MNum)
 
         clear LASER_SPIKE2 NOLASER_SPIKE2
         for v = 1:size(h,1)
-            for w = 1:numel(LASER_SPIKE{v,n})
-                LASER_SPIKE2{v}{w} = [sort(LASER_SPIKE{v,n}{w}); w*ones(1,length(LASER_SPIKE{v,n}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
+            for w = 1:numel(LASER_SPIKE{v})
+                LASER_SPIKE2{v}{w} = [sort(LASER_SPIKE{v}{w}); w*ones(1,length(LASER_SPIKE{v}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
                 SpikeDataLaser{v} = [SpikeDataLaser{v} LASER_SPIKE2{v}{w}]; %Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
             end
-            FR_LASER{u,n}(v,:) = smoothFRx4(SpikeDataLaser{v},numel(LASER_SPIKE{v,n})*stimInfo.repeats,0.001,[-Win Win],5);
-            all_LASERSPIKE2{u,n} = LASER_SPIKE2;
+            FR_LASER{u,n}(v,:) = smoothFRx4(SpikeDataLaser{v},numel(LASER_SPIKE{v})*stimInfo.repeats,0.001,[-Win Win],5);
+            %all_LASERSPIKE2{u,n} = LASER_SPIKE2;
             
-            for w = 1:numel(NOLASER_SPIKE{v,n})
-                NOLASER_SPIKE2{v}{w} = [sort(NOLASER_SPIKE{v,n}{w}); w*ones(1,length(NOLASER_SPIKE{v,n}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
+            for w = 1:numel(NOLASER_SPIKE{v})
+                NOLASER_SPIKE2{v}{w} = [sort(NOLASER_SPIKE{v}{w}); w*ones(1,length(NOLASER_SPIKE{v}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
                 SpikeDataNoLaser{v} = [SpikeDataNoLaser{v} NOLASER_SPIKE2{v}{w}]; %Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
             end
-            FR_NOLASER{u,n}(v,:) = smoothFRx4(SpikeDataNoLaser{v},numel(NOLASER_SPIKE{v,n})*stimInfo.repeats,0.001,[-Win, Win],5);
-            all_NOLASERSPIKE2{u,n} = NOLASER_SPIKE2;
+            FR_NOLASER{u,n}(v,:) = smoothFRx4(SpikeDataNoLaser{v},numel(NOLASER_SPIKE{v})*stimInfo.repeats,0.001,[-Win, Win],5);
+            %all_NOLASERSPIKE2{u,n} = NOLASER_SPIKE2;
         end
         
     end
@@ -106,7 +106,7 @@ for u = 1:length(MNum)
 end
 
 cd(FileOutput);
-save(TITLE,'TITLE','MNum','Sesh','allCELL','FR_LASER','FR_NOLASER','CellQ');
+%save(TITLE,'TITLE','MNum','Sesh','allCELL','FR_LASER','FR_NOLASER','CellQ');
 
 disp('*******************************************************************');
 disp(['2. FR smoothed for top ' num2str(nfreq) ' frequencies']);
@@ -255,8 +255,8 @@ for n = 1:3
         q = match(end);
         load(['D:\Spikes\M' h1(v,8:11) '\SpikeMat\TC003_LEFT-0' num2str(n) h1(v,6:q-1) '.mat']); 
 
-        SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep,Time, Win);
-        SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep,Time, Win);
+        SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep, Win);
+        SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep, Win);
         for j = 1:nFreq
             SpkTime_LaserAll{v,j} = SpkTime_Laser(j,amps,:);
             SpkTime_NoLaserAll{v,j} = SpkTime_NoLaser(j,amps,:);
@@ -276,14 +276,14 @@ for n = 1:3
                 LASER_SPIKE_ALL{v,j}{w} = [sort(SpkTime_LaserAll{v,j}{w}); w*ones(1,length(SpkTime_LaserAll{v,j}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
                 SpikeDataLaserAll{v,j} = [SpikeDataLaserAll{v,j} LASER_SPIKE_ALL{v,j}{w}]; %Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
             end
-            FR_LASER_ALL(j,v,:) = smoothFRx4(SpikeDataLaserAll{v,j},numel(LASER_SPIKE_ALL{v,j}),0.001,[-Win Win],5);
+            FR_LASER_ALL(j,v,:) = smoothFRx4(SpikeDataLaserAll{v,j},numel(LASER_SPIKE_ALL{v,j})*stimInfo.repeats,0.001,[-Win Win],5);
 
             %For no laser trials
             for w = 1:numel(SpkTime_NoLaserAll{v})
                 NOLASER_SPIKE_ALL{v,j}{w} = [sort(SpkTime_NoLaserAll{v,j}{w}); w*ones(1,length(SpkTime_NoLaserAll{v,j}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
                 SpikeDataNoLaserAll{v,j} = [SpikeDataNoLaserAll{v,j} NOLASER_SPIKE_ALL{v,j}{w}];%Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
             end
-            FR_NOLASER_ALL(j,v,:) = smoothFRx4(SpikeDataNoLaserAll{v,j},numel(NOLASER_SPIKE_ALL{v,j}),0.001,[-Win Win],5);
+            FR_NOLASER_ALL(j,v,:) = smoothFRx4(SpikeDataNoLaserAll{v,j},numel(NOLASER_SPIKE_ALL{v,j})*stimInfo.repeats,0.001,[-Win Win],5);
 
         end
     end
@@ -514,8 +514,8 @@ for n = 1:3
         q = match(end);
         load(['D:\Spikes\M' h1(v,8:11) '\SpikeMat\TC003_LEFT-0' num2str(n) h1(v,6:q-1) '.mat']); 
 
-        SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep,Time, Win);
-        SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep,Time, Win);
+        SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep, Win);
+        SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep, Win);
         
         for j = 1:nFreq
             SpkTime_LaserAll{v,j} = SpkTime_Laser(j,amps,:);
@@ -536,14 +536,14 @@ for n = 1:3
                 LASER_SPIKE_ALL{v,j}{w} = [sort(SpkTime_LaserAll{v,j}{w}); w*ones(1,length(SpkTime_LaserAll{v,j}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
                 SpikeDataLaserAll{v,j} = [SpikeDataLaserAll{v,j} LASER_SPIKE_ALL{v,j}{w}]; %Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
             end
-            FR_LASER_ALL(j,v,:) = smoothFRx4(SpikeDataLaserAll{v,j},numel(LASER_SPIKE_ALL{v,j}),0.001,[-Win Win],5);
+            FR_LASER_ALL(j,v,:) = smoothFRx4(SpikeDataLaserAll{v,j},numel(LASER_SPIKE_ALL{v,j})*stimInfo.repeats,0.001,[-Win Win],5);
 
             %For no laser trials
             for w = 1:numel(SpkTime_NoLaserAll{v})
                 NOLASER_SPIKE_ALL{v,j}{w} = [sort(SpkTime_NoLaserAll{v,j}{w}); w*ones(1,length(SpkTime_NoLaserAll{v,j}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
                 SpikeDataNoLaserAll{v,j} = [SpikeDataNoLaserAll{v,j} NOLASER_SPIKE_ALL{v,j}{w}];%Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
             end
-            FR_NOLASER_ALL(j,v,:) = smoothFRx4(SpikeDataNoLaserAll{v,j},numel(NOLASER_SPIKE_ALL{v,j}),0.001,[-Win Win],5);
+            FR_NOLASER_ALL(j,v,:) = smoothFRx4(SpikeDataNoLaserAll{v,j},numel(NOLASER_SPIKE_ALL{v,j})*stimInfo.repeats,0.001,[-Win Win],5);
 
         end
     end
