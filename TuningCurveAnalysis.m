@@ -68,8 +68,8 @@ for u = 1:length(MNum)
         load(['D:\Spikes\M' num2str(MNum(u)) '\SpikeMat\R407F'  h(v,5:q) '.mat']); 
         CellQ{u}(v) = CellInfo(6);
 
-        SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep,Time, Win);
-        SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep,Time, Win);
+        SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep, Win);
+        SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep, Win);
 
         %Select those in bins around top frequencies and top 3 amplitudes
         LASER_SPIKE{v} = SpkTime_Laser(LOCSon{u}(v,:),amps,:);
@@ -331,8 +331,8 @@ for v = 1:size(h1,1) %for filter 3, v = 47 peak is at index 2
     q = match(end);
     load(['D:\Spikes\M' h1(v,10:13) '\SpikeMat\R407F'  h1(v,5:q-1) '.mat']); 
 
-    SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep,Time, Win);
-    SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep,Time, Win);
+    SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep, Win);
+    SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep, Win);
     for j = 1:nFreq
         SpkTime_LaserAll{v,j} = SpkTime_Laser(j,6:8,:);
         SpkTime_NoLaserAll{v,j} = SpkTime_NoLaser(j,6:8,:);
@@ -576,8 +576,8 @@ for v = 1:size(h1,1)
     q = match(end);
     load(['D:\Spikes\M' h1(v,10:13) '\SpikeMat\R407F'  h1(v,5:q-1) '.mat']); 
 
-    SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep,Time, Win);
-    SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep,Time, Win);
+    SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep, Win);
+    SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep, Win);
     for j = 1:nFreq
         SpkTime_LaserAll{v,j} = SpkTime_Laser(j,amps,:);
         SpkTime_NoLaserAll{v,j} = SpkTime_NoLaser(j,amps,:);
