@@ -135,7 +135,7 @@ for u = 1:length(MNum)
     numcellA = size(allCELL{u},1);
     idxGOOD{u} = NaN(1,numcellA);    
     for j = 1:numcellA
-        if CellQ{u}(j) <= 4 && CellQ > 0 && ... %Use only good multi-units and single units
+        if CellQ{u}(j) <= 4 && CellQ{u}(j) > 0 && ... %Use only good multi-units and single units
             mean(FR_NOLASER{u,1}(j,240:290)) > (2*std(FR_NOLASER{u,1}(j,145:235)) + mean(FR_NOLASER{u,1}(j,145:235))); %Only use cells with ave tone-evoked FR higher than 2 std's above spontaneous
         
             idxGOOD{u}(j) = 1; %Identify usable cells
