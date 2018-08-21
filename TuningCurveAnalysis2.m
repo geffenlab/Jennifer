@@ -106,7 +106,7 @@ for u = 1:length(MNum)
 end
 
 cd(FileOutput);
-%save(TITLE,'TITLE','MNum','Sesh','allCELL','FR_LASER','FR_NOLASER','CellQ');
+save(TITLE,'TITLE','MNum','Sesh','allCELL','FR_LASER','FR_NOLASER','CellQ');
 
 disp('*******************************************************************');
 disp(['2. FR smoothed for top ' num2str(nfreq) ' frequencies']);
@@ -605,4 +605,174 @@ disp('*******************************************************************');
 disp(['6. Sparseness of affected cells: h = ' num2str(h_sparse) ' and p = ' num2str(p_sparse)]);
 disp('*******************************************************************');
 
+%% ************************************************************************
+%  *****                         7.LINEAR FITS                        *****
+%  ************************************************************************
+fontname = 'Arial';
+set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k');
 
+cd('D:\Spikes')
+onsets = {'-100 ms','-20 ms', '+8 ms'};
+use = GOODCELLall(SigCellmagDOWN,:);
+fitted = cell(1,3);
+figure;
+for n = 1:3
+    for i = 1:size(use,1)
+        q = find(use(i,:) == '.');
+        load([use(i,1:q - 2) num2str(n) '.mat'])
+        %Normalize firing rate
+        Ton = sort(TCon.TCmat{1});
+        Toff = sort(TCoff.TCmat{1});
+        ToffNorm = (Toff - min(Toff))./(max(Toff) - min(Toff));
+        TonNorm = (Ton - min(Toff))./(max(Toff) - min(Toff));
+        
+        %Calculate linear fits
+        mdl = fitlm(ToffNorm,TonNorm);
+        fitted{n}(i,:) = mdl.Coefficients{2,1}*[0:0.05:1]+mdl.Coefficients{1,1};
+    end
+    
+    meanY = mean(fitted{n},1);
+    semY = std(fitted{n},[],1)./sqrt(size(fitted{n},1));
+    subplot(1,3,n); plot([0:0.05:1],fitted{n}','Color', [0.8 0.8 0.8],'linewidth',2)
+    hold on; plot([0:0.05:1],meanY,'Color','r','linewidth',2); 
+    line([0 1],[0 1],'Color','k','linestyle','--');
+    plot([0:0.05:1],meanY + semY,'--r');
+    plot([0:0.05:1],meanY - semY,'--r');
+    hold off;
+    box off;
+    set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
+    title(['Laser Onset: ' onsets{n}]);
+end
+
+suptitle('Feedback Affected Cells: Response Mag DECREASE')
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1600 500]);
+set(gcf,'Position',[0 0 1600 500]);
+cd(FigOutput)
+print('LinFit_magDOWN','-dpdf','-r400')
+
+
+cd('D:\Spikes')
+use = GOODCELLall(SigCellmagUP,:);
+fitted = cell(1,3);
+figure;
+for n = 1:3
+    for i = 1:size(use,1)
+        q = find(use(i,:) == '.');
+        load([use(i,1:q - 2) num2str(n) '.mat'])
+        %Normalize firing rate
+        Ton = sort(TCon.TCmat{1});
+        Toff = sort(TCoff.TCmat{1});
+        ToffNorm = (Toff - min(Toff))./(max(Toff) - min(Toff));
+        TonNorm = (Ton - min(Toff))./(max(Toff) - min(Toff));
+        
+        %Calculate linear fits
+        mdl = fitlm(ToffNorm,TonNorm);
+        fitted{n}(i,:) = mdl.Coefficients{2,1}*[0:0.05:1]+mdl.Coefficients{1,1};
+    end
+    
+    meanY = mean(fitted{n},1);
+    semY = std(fitted{n},[],1)./sqrt(size(fitted{n},1));
+    subplot(1,3,n); plot([0:0.05:1],fitted{n}','Color', [0.8 0.8 0.8],'linewidth',2)
+    hold on; plot([0:0.05:1],meanY,'Color','r','linewidth',2); 
+    line([0 1],[0 1],'Color','k','linestyle','--');
+    plot([0:0.05:1],meanY + semY,'--r');
+    plot([0:0.05:1],meanY - semY,'--r');
+    hold off;
+    box off;
+    set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
+    title(['Laser Onset: ' onsets{n}]);
+end
+
+suptitle('Feedback Affected Cells: Response Mag INCREASE')
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1600 500]);
+set(gcf,'Position',[0 0 1600 500]);
+cd(FigOutput)
+print('LinFit_magUP','-dpdf','-r400')
+
+cd('D:\Spikes')
+use = GOODCELLall(SigCellspontDOWN,:);
+fitted = cell(1,3);
+figure;
+for n = 1:3
+    for i = 1:size(use,1)
+        q = find(use(i,:) == '.');
+        load([use(i,1:q - 2) num2str(n) '.mat'])
+        %Normalize firing rate
+        Ton = sort(TCon.TCmat{1});
+        Toff = sort(TCoff.TCmat{1});
+        ToffNorm = (Toff - min(Toff))./(max(Toff) - min(Toff));
+        TonNorm = (Ton - min(Toff))./(max(Toff) - min(Toff));
+        
+        %Calculate linear fits
+        mdl = fitlm(ToffNorm,TonNorm);
+        fitted{n}(i,:) = mdl.Coefficients{2,1}*[0:0.05:1]+mdl.Coefficients{1,1};
+    end
+    
+    meanY = mean(fitted{n},1);
+    semY = std(fitted{n},[],1)./sqrt(size(fitted{n},1));
+    subplot(1,3,n); plot([0:0.05:1],fitted{n}','Color', [0.8 0.8 0.8],'linewidth',2)
+    hold on; plot([0:0.05:1],meanY,'Color','r','linewidth',2); 
+    line([0 1],[0 1],'Color','k','linestyle','--');
+    plot([0:0.05:1],meanY + semY,'--r');
+    plot([0:0.05:1],meanY - semY,'--r');
+    hold off;
+    box off;
+    set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
+    title(['Laser Onset: ' onsets{n}]);
+end
+
+suptitle('Feedback Affected Cells: Response Spont DECREASE')
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1600 500]);
+set(gcf,'Position',[0 0 1600 500]);
+cd(FigOutput)
+print('LinFit_spontDOWN','-dpdf','-r400')
+
+cd('D:\Spikes')
+use = GOODCELLall(SigCellspontUP,:);
+fitted = cell(1,3);
+figure;
+for n = 1:3
+    for i = 1:size(use,1)
+        q = find(use(i,:) == '.');
+        load([use(i,1:q - 2) num2str(n) '.mat'])
+        %Normalize firing rate
+        Ton = sort(TCon.TCmat{1});
+        Toff = sort(TCoff.TCmat{1});
+        ToffNorm = (Toff - min(Toff))./(max(Toff) - min(Toff));
+        TonNorm = (Ton - min(Toff))./(max(Toff) - min(Toff));
+        
+        %Calculate linear fits
+        mdl = fitlm(ToffNorm,TonNorm);
+        fitted{n}(i,:) = mdl.Coefficients{2,1}*[0:0.05:1]+mdl.Coefficients{1,1};
+    end
+    
+    meanY = mean(fitted{n},1);
+    semY = std(fitted{n},[],1)./sqrt(size(fitted{n},1));
+    subplot(1,3,n); plot([0:0.05:1],fitted{n}','Color', [0.8 0.8 0.8],'linewidth',2)
+    hold on; plot([0:0.05:1],meanY,'Color','r','linewidth',2); 
+    line([0 1],[0 1],'Color','k','linestyle','--');
+    plot([0:0.05:1],meanY + semY,'--r');
+    plot([0:0.05:1],meanY - semY,'--r');
+    hold off;
+    box off;
+    set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
+    title(['Laser Onset: ' onsets{n}]);
+end
+
+suptitle('Feedback Affected Cells: Response Spont INCREASE')
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1600 500]);
+set(gcf,'Position',[0 0 1600 500]);
+cd(FigOutput)
+print('LinFit_spontUP','-dpdf','-r400')
