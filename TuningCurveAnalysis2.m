@@ -398,12 +398,12 @@ end
 figure; 
 subplot(3,2,1);
 scatter(spontOFFall, spontONall,25,'filled')
-hold on; line([0 max([[spontOFF{:}], [spontON{:}]])], [0 max([[spontOFF{:}], [spontON{:}]])],'Color','k','LineStyle', '--');
+hold on; line([0 max([[spontOFFall], [spontONall]])], [0 max([[spontOFFall], [spontONall]])],'Color','k','LineStyle', '--');
 %hold on; line([0 31.98], [0 31.98]);
 scatter(spontOFFall(SigCellspontDOWN), spontONall(SigCellspontDOWN),25,'m','filled')
 scatter(spontOFFall(SigCellspontUP), spontONall(SigCellspontUP),25,'y','filled')
 hold off; axis square
-set(gca, 'xlim', [0 max([[spontOFF{:}], [spontON{:}]])], 'ylim', [0 max([[spontOFF{:}], [spontON{:}]])],'TickDir','out')
+set(gca, 'xlim', [0 max([[spontOFFall], [spontONall]])], 'ylim', [0 max([[spontOFFall], [spontONall]])],'TickDir','out')
 xlabel('LASER OFF'); ylabel('LASER ON')
 title(['Spontaneous activity (Hz)'])
 box off
@@ -465,6 +465,9 @@ IDXdown = IDXall(unique([SigCellmagDOWN SigCellspontDOWN]));
 GOODCELLdown = GOODCELLall(unique([SigCellmagDOWN SigCellspontDOWN]),:);
 IDXsig = IDXall(unique([SigCellmagUP SigCellspontUP SigCellmagDOWN SigCellspontDOWN]));
 GOODCELLsig = GOODCELLall(unique([SigCellmagUP SigCellspontUP SigCellmagDOWN SigCellspontDOWN]),:);
+
+cd(FileOutput)
+save(TITLE,'SigCellmagUP','SigCellmagDOWN','SigCellspontUP','SigCellspontDOWN','-append')
 
 disp('*******************************************************************');
 disp(['5. ' num2str(length(IDXsig)) ' show change'])
@@ -615,6 +618,7 @@ cd('D:\Spikes')
 onsets = {'-100 ms','-20 ms', '+8 ms'};
 use = GOODCELLall(SigCellmagDOWN,:);
 fitted = cell(1,3);
+linearparams{1} = NaN(size(use,1),3);
 figure;
 for n = 1:3
     for i = 1:size(use,1)
@@ -625,9 +629,11 @@ for n = 1:3
         Toff = sort(TCoff.TCmat{1});
         ToffNorm = (Toff - min(Toff))./(max(Toff) - min(Toff));
         TonNorm = (Ton - min(Toff))./(max(Toff) - min(Toff));
-        
+
         %Calculate linear fits
         mdl = fitlm(ToffNorm,TonNorm);
+        linearparams{1}(i,n) = mdl.Coefficients{2,1};
+        linearparams{1}(i,n+3) = mdl.Coefficients{1,1};
         fitted{n}(i,:) = mdl.Coefficients{2,1}*[0:0.05:1]+mdl.Coefficients{1,1};
     end
     
@@ -643,7 +649,7 @@ for n = 1:3
     set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
     title(['Laser Onset: ' onsets{n}]);
 end
-
+LinearFits.magDOWN = fitted;
 suptitle('Feedback Affected Cells: Response Mag DECREASE')
 set(gcf,'PaperPositionMode','auto');         
 set(gcf,'PaperOrientation','landscape');
@@ -657,6 +663,7 @@ print('LinFit_magDOWN','-dpdf','-r400')
 cd('D:\Spikes')
 use = GOODCELLall(SigCellmagUP,:);
 fitted = cell(1,3);
+linearparams{2} = NaN(size(use,1),3);
 figure;
 for n = 1:3
     for i = 1:size(use,1)
@@ -667,9 +674,11 @@ for n = 1:3
         Toff = sort(TCoff.TCmat{1});
         ToffNorm = (Toff - min(Toff))./(max(Toff) - min(Toff));
         TonNorm = (Ton - min(Toff))./(max(Toff) - min(Toff));
-        
+
         %Calculate linear fits
         mdl = fitlm(ToffNorm,TonNorm);
+        linearparams{2}(i,n) = mdl.Coefficients{2,1};
+        linearparams{2}(i,n+3) = mdl.Coefficients{1,1};
         fitted{n}(i,:) = mdl.Coefficients{2,1}*[0:0.05:1]+mdl.Coefficients{1,1};
     end
     
@@ -685,7 +694,7 @@ for n = 1:3
     set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
     title(['Laser Onset: ' onsets{n}]);
 end
-
+LinearFits.magUP = fitted;
 suptitle('Feedback Affected Cells: Response Mag INCREASE')
 set(gcf,'PaperPositionMode','auto');         
 set(gcf,'PaperOrientation','landscape');
@@ -697,6 +706,7 @@ print('LinFit_magUP','-dpdf','-r400')
 
 cd('D:\Spikes')
 use = GOODCELLall(SigCellspontDOWN,:);
+linearparams{3} = NaN(size(use,1),3);
 fitted = cell(1,3);
 figure;
 for n = 1:3
@@ -711,6 +721,8 @@ for n = 1:3
         
         %Calculate linear fits
         mdl = fitlm(ToffNorm,TonNorm);
+        linearparams{3}(i,n) = mdl.Coefficients{2,1};
+        linearparams{3}(i,n+3) = mdl.Coefficients{1,1};
         fitted{n}(i,:) = mdl.Coefficients{2,1}*[0:0.05:1]+mdl.Coefficients{1,1};
     end
     
@@ -726,7 +738,7 @@ for n = 1:3
     set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
     title(['Laser Onset: ' onsets{n}]);
 end
-
+LinearFits.spontDOWN = fitted;
 suptitle('Feedback Affected Cells: Response Spont DECREASE')
 set(gcf,'PaperPositionMode','auto');         
 set(gcf,'PaperOrientation','landscape');
@@ -738,6 +750,7 @@ print('LinFit_spontDOWN','-dpdf','-r400')
 
 cd('D:\Spikes')
 use = GOODCELLall(SigCellspontUP,:);
+linearparams{4} = NaN(size(use,1),3);
 fitted = cell(1,3);
 figure;
 for n = 1:3
@@ -752,6 +765,8 @@ for n = 1:3
         
         %Calculate linear fits
         mdl = fitlm(ToffNorm,TonNorm);
+        linearparams{4}(i,n) = mdl.Coefficients{2,1};
+        linearparams{4}(i,n+3) = mdl.Coefficients{1,1};
         fitted{n}(i,:) = mdl.Coefficients{2,1}*[0:0.05:1]+mdl.Coefficients{1,1};
     end
     
@@ -767,6 +782,7 @@ for n = 1:3
     set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
     title(['Laser Onset: ' onsets{n}]);
 end
+LinearFits.spontUP = fitted;
 
 suptitle('Feedback Affected Cells: Response Spont INCREASE')
 set(gcf,'PaperPositionMode','auto');         
@@ -776,3 +792,6 @@ set(gcf,'PaperSize',[1600 500]);
 set(gcf,'Position',[0 0 1600 500]);
 cd(FigOutput)
 print('LinFit_spontUP','-dpdf','-r400')
+
+cd(FileOutput)
+save(TITLE,'LinearFits','linearparams','-append')
