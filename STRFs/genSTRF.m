@@ -1,4 +1,4 @@
-function STA = genSTRF(spikes,StimParams,win,fig)
+function STA = genSTRF(spikes,StimParams,win)
 
 if StimParams.chordDuration > 0.005
     rin = StimParams.chordDuration;
@@ -14,9 +14,7 @@ end
 %spikesSTA = spikes;
 %spikesSTA(ind) = [];
 
+spikes(spikes < win) = [];
 [STA, ~] = genSTA(spikes,STIM,win,fps);
 
-if nargin > 3
-    t = [0:20]; %Not sure what these time bins should be...
-    plotSTA(StimParams.freqs,t,STA);
-end
+
