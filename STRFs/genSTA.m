@@ -1,14 +1,13 @@
-function [sta nSpikes] = genSTA(spikes,S,w,fps);
-
-% function [sta nSpikes] = genSTA(spikes,S,w,fps);
-% 
+function [sta, nSpikes] = genSTA(spikes,S,w,fps);
 % This function generates a spike-triggered average
-% spikes = spike times (needs to be in seconds from the start of
-% the stimulus
-% S = stimulus spectrogram of m frequencies by n time bins (dbs matrix)
-% w = length of the stimulus window to consider for the STA (how
-% far back in time do you want your STA to go) (100 ms)
-% fps = stimulus frame rate (1 / chord length)
+%
+%Inputs:
+%   spikes = spike times (needs to be in seconds from the start of
+%            the stimulus
+%   S = stimulus spectrogram of m frequencies by n time bins (dbs matrix)
+%   w = length of the stimulus window to consider for the STA in seconds (how
+%       far back in time do you want your STA to go) (100 ms)
+%   fps = stimulus frame rate (1 / chord length)
 
 % convert spike times to stim bins
 spikeT = ceil(spikes*fps);
