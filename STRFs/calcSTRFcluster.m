@@ -21,3 +21,5 @@ clusters = StatThresh(Zsta, p, sigma_b, tC, wholePic);
 
 %Identify significant clusters
 [STRFclusterdata.tCi, STRFclusterdata.info] = DiplayRes_STRF(clusters,smoothSTRF);
+
+STRFclusterdata.tCi.STA = STRF;
