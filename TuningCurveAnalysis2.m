@@ -795,3 +795,103 @@ print('LinFit_spontUP','-dpdf','-r400')
 
 cd(FileOutput)
 save(TITLE,'LinearFits','linearparams','-append')
+
+%% ************************************************************************
+%  *****                        7.STRF ANALYSIS                       *****
+%  ************************************************************************
+
+%parameters
+its = 1; %iterations for random STA
+
+sigma_b = 1.5;
+p = .05;	%p-value
+tC = 2.3; 	%threshold (for Cluster test)
+LaserOn1 = 0.5;
+LaserDur = 0.25;
+stimdur = 300;
+win = [0 0.25; 0.25 0.5; 0.5 0.75; 0.75 1];
+STAwin = 0.1;
+
+%Load stimulus parameters
+load('DRC001-01','params');
+randparams = params;
+times = [-0.1:0.005:0];
+freqs = params.freqs;
+
+temp = vertcat(allCELL{:});
+Qcell = temp(horzcat(CellQ{:}) > 0 & horzcat(CellQ{:}) < 5,:);
+for u = 1:size(Qcell,1)
+    q = find(Qcell(u,:) == '.');
+    load(['DRC001-' Qcell(u,7:q-10) '.mat'])
+    load(['DRC001_LEFT-01-' Qcell(u,7:q-10) '.mat'])
+    
+%     %%%Load spike file here (also append cellInfo with STRFclust)%%%
+    spikes = SpikeData(3,:);
+    spikes(spikes >= stimdur) = [];
+    %Align so that first laser onset is at 0
+%     spikeshift = spikes - LaserOn1;
+%     spikeshift(spikeshift < 0) = 0;
+%     SpikeTmod = mod(spikeshift,1); %Convert spike times into 1 second chunks
+
+    clear STRFclust
+%    for chunk = [1 4];
+    %Find spike indices for different laser on/laser off chunks
+%    ind = find(SpikeTmod > win(chunk,1) & SpikeTmod <= win(chunk,2));
+    randSTRFall = zeros(size(STAon,1),size(STAon,2),its);
+    fprintf('Generating random STA(s)...\n')
+        for i = 1:its
+            fprintf('Iteration %02d/%02d...\n',i,its);
+            % make a stim shuffle index
+            idx = randperm(size(params.dbs,2));
+            randparams.dbs = params.dbs(:,idx);
+            % make a new sta from shuffled stim
+            randSTRFall(:,:,i) = genSTRF(spikes,randparams,STAwin);
+        end
+
+        % get the mean matrix of the permutation - this is the noise:
+        randSTRF = mean(randSTRFall,3);  
+        
+
+        STRFclustON.POS = calcSTRFcluster(STAon,randSTRF,sigma_b,p,tC);
+        STRFclustON.NEG = calcSTRFcluster(-STAon,-randSTRF,sigma_b,p,tC);
+        STRFclustOFF.POS = calcSTRFcluster(STAoff3,randSTRF,sigma_b,p,tC);
+        STRFclustOFF.NEG = calcSTRFcluster(-STAoff3,-randSTRF,sigma_b,p,tC);
+        
+        %Plot masks for positive lobe just to check if cluster test seems
+        %reasonable
+        MM = max(max([STAon;STAoff3]));
+        mm = min(min([STAon;STAoff3]));
+        subplot(2,2,1); plotSTA([-0.1:0.005:0],params.freqs/1000,STAon,1,[mm MM]);
+
+        subplot(2,2,3); plotSTA([-0.1:0.005:0],params.freqs/1000,STAoff3,1,[mm MM]);
+        subplot(2,2,4); imagesc(STRFclustOFF.POS.tCi.ClusTest)
+        set(gca,'YDir','normal')
+        subplot(2,2,2); imagesc(STRFclustON.POS.tCi.ClusTest)
+        set(gca,'YDir','normal')
+        
+      
+        
+        if STRFclustOFF.POS.info.Clusterdata(end) == 1 && STRFclustON.POS.info.Clusterdata(end) == 1 
+            [ClusMask, STRFclustON.POS.params.OFFmaskmean] = matchSTRFclust(STRFclustOFF.POS.tCi.ClusMask,STRFclustON.POS.tCi.ClusMask,STAon);
+            STRFclustON.POS.tCi.ClusMaskOrig = STRFclustON.POS.tCi.ClusMask;
+            STRFclustON.POS.tCi.ClusMask = ClusMask;
+        end
+                           
+        
+        if STRFclustOFF.NEG.info.Clusterdata(end) == 1 && STRFclustON.NEG.info.Clusterdata(end) == 1 
+            [ClusMask, STRFclustON.NEG.params.OFFmaskmean] = matchSTRFclust(STRFclustOFF.NEG.tCi.ClusMask,STRFclustON.NEG.tCi.ClusMask,STAon);
+            STRFclustON.NEG.tCi.ClusMaskOrig = STRFclustON.NEG.tCi.ClusMask;
+            STRFclustON.NEG.tCi.ClusMask = ClusMask;
+        end
+                
+        STRFclustOFF.POS = calcSTRFparams(STRFclustOFF.POS,times,freqs);
+        STRFclustON.POS = calcSTRFparams(STRFclustON.POS,times,freqs);
+        STRFclustOFF.NEG = calcSTRFparams(STRFclustOFF.NEG,times,freqs);
+        STRFclustON.NEG = calcSTRFparams(STRFclustON.NEG,times,freqs);  
+        
+        save(['DRC001-' Qcell(u,7:q-10) '.mat'],'STRFclustON','STRFclustOFF','-append')
+
+end
+
+
+
