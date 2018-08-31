@@ -1,5 +1,5 @@
 FigOut = 'C:\Users\Jennifer\Dropbox\GeffenLab\Jennifer\Manuscripts\Feedback\Figures';
-tunedata = 'C:\Users\Jennifer\Documents\MATLAB\TuningCurveAnalysis\Feedback ChR2 in IC.mat';
+tunedata = 'C:\Users\Jennifer\Documents\MATLAB\TuningCurveAnalysis\Feedback ChR2 in IC.mat';  %Calculated from TuningCurveAnalysis2.m
 load(tunedata);
 
 GOODCELLall = vertcat(GOODCELL{:});
@@ -541,3 +541,176 @@ print('LinFit_spontUP','-dpdf','-r400')
 %% ************************************************************************
 %  *****                         4. STRF FIGURES                      *****
 %  ************************************************************************
+
+%%%%%%%%%%%%% I. EXAMPLE STRFs %%%%%%%%%%%%%
+EX = {'M3222-1-6-1-1';'M3222-1-7-3-1';'M3222-3-3-2-1';'M3222-3-6-1-1'};
+load('DRC001-01','params');
+
+for ex = 1%:length(EX);
+    cd('D:\Spikes')
+    load(['DRC001-' EX{ex} '.mat']);
+    MM = max(max([STAon;STAoff3]));
+    mm = min(min([STAon;STAoff3]));
+    subplot(1,2,1); plotSTA([-0.1:0.005:0],params.freqs/1000,STAoff3,1,[mm,MM]);
+    title('Laser OFF');
+    subplot(1,2,2); plotSTA([-0.1:0.005:0],params.freqs/1000,STAon,1,[mm,MM]);
+    title('Laser ON');
+    suptitle(EX{ex})
+    
+    set(gcf,'PaperPositionMode','auto');         
+    set(gcf,'PaperOrientation','landscape');
+    set(gcf,'PaperUnits','points');
+    set(gcf,'PaperSize',[1200 600]);
+    set(gcf,'Position',[0 0 1200 600]);
+    
+    cd(FigOut)
+    print(['STRFex' num2str(ex)],'-dpdf','-r400')    
+end
+
+
+
+%%
+%%%%%%%%%%%%% II. PLOT STRF PARAMETERS LASER ON VS LASER OFF %%%%%%%%%%%%%
+%Sorry for this ugly code
+
+paramlabels = {'time width (s)','freq width (kHz)','peak time (s)','peak freq (kHz)','size (pixels)', 'mean value'};
+%For cells that show increase in FR with laser ON
+POSparamsON = [];
+POSparamsOFF = [];
+NEGparamsON = [];
+NEGparamsOFF = [];
+noClust = [0 0 0 NaN NaN 0 0]; %This will be the data if a cluster in laser OFF is not present in laser ON
+for u = 1%:size(strfcellUP,1)
+    q = find(strfcellUP(u,:) == '.');
+    load(['DRC001-' strfcellUP(u,7:q-10) '.mat']);
+    
+    %First need to match clusters in OFF and ON conditions
+    clustOFF = STRFclustOFF.POS.params.data(:,1);
+    if clustOFF ~=0
+        tempOFFparams = STRFclustOFF.POS.params.data;
+        tempONparams = repmat(noClust,length(clustOFF),1);
+        clustON = STRFclustON.POS.params.data(:,1);
+        counter = 0;
+        for w = clustOFF'
+            counter = counter + 1;
+            a = find(clustON == w);
+            if ~isempty(a)
+                tempONparams(counter,:) = [STRFclustON.POS.params.data(a,1:end-1) STRFclustON.POS.params.OFFmaskmean(STRFclustON.POS.params.OFFmaskmean(:,1) == w,2)] ;
+            end
+
+        end
+
+        POSparamsOFF = [POSparamsOFF; tempOFFparams];
+        POSparamsON = [POSparamsON; tempONparams];
+    end
+    
+    clustOFF = STRFclustOFF.NEG.params.data(:,1);
+    if clustOFF ~=0
+        tempOFFparams = STRFclustOFF.NEG.params.data;
+        tempONparams = repmat(noClust,length(clustOFF),1);
+        clustON = STRFclustON.NEG.params.data(:,1);
+        counter = 0;
+        for w = clustOFF'
+            counter = counter + 1;
+            a = find(clustON == w);
+            if ~isempty(a)
+                tempONparams(counter,:) = [STRFclustON.NEG.params.data(a,1:end-1) STRFclustON.NEG.params.OFFmaskmean(STRFclustON.NEG.params.OFFmaskmean(:,1) == w,2)] ;
+            end
+
+        end
+
+        NEGparamsOFF = [NEGparamsOFF; tempOFFparams];
+        NEGparamsON = [NEGparamsON; tempONparams];
+    end
+end
+
+figure;
+for i = 1:6
+    subplot(2,3,i); scatter(POSparamsOFF(:,i+1),POSparamsON(:,i+1),25,'filled','markerfacecolor','k')
+    hold on; scatter(NEGparamsOFF(:,i+1),NEGparamsON(:,i+1),25,'filled','markerfacecolor',[0.4 0.4 0.4]);
+    MM = nanmax([POSparamsOFF(:,i+1);POSparamsON(:,i+1);NEGparamsOFF(:,i+1);NEGparamsON(:,i+1)]);
+    mm = nanmin([POSparamsOFF(:,i+1);POSparamsON(:,i+1);NEGparamsOFF(:,i+1);NEGparamsON(:,i+1)]);
+    line([mm MM],[mm MM],'Color','k','linestyle','--');
+    axis tight; axis square; box off;
+    set(gca,'TickDir','out');
+    xlabel('Laser OFF'); ylabel('Laser ON');
+    title(paramlabels{i});
+
+end
+suptitle('STRF parameters: units with INCREASE in FR')
+
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1600 800]);
+set(gcf,'Position',[0 0 1600 800]);
+
+POSparamsOFF = [];
+POSparamsON = [];
+NEGparamsOFF = [];
+NEGparamsON = [];
+for u = 1:size(strfcellDOWN,1)
+    q = find(strfcellDOWN(u,:) == '.');
+    load(['DRC001-' strfcellDOWN(u,7:q-10) '.mat']);
+    
+    %First need to match clusters in OFF and ON conditions
+    clustOFF = STRFclustOFF.POS.params.data(:,1);
+    if clustOFF ~= 0
+        tempOFFparams = STRFclustOFF.POS.params.data;
+        tempONparams = repmat(noClust,length(clustOFF),1);
+        clustON = STRFclustON.POS.params.data(:,1);
+        counter = 0;
+        for w = clustOFF'
+            counter = counter + 1;
+            a = find(clustON == w);
+            if ~isempty(a)
+                tempONparams(counter,:) = [STRFclustON.POS.params.data(a,1:end-1) STRFclustON.POS.params.OFFmaskmean(STRFclustON.POS.params.OFFmaskmean(:,1) == w,2)] ;
+            end
+
+        end
+
+        POSparamsOFF = [POSparamsOFF; tempOFFparams];
+        POSparamsON = [POSparamsON; tempONparams];
+    end
+
+
+    clustOFF = STRFclustOFF.NEG.params.data(:,1);
+    if clustOFF ~= 0
+        tempOFFparams = STRFclustOFF.NEG.params.data;
+        tempONparams = repmat(noClust,length(clustOFF),1);
+        clustON = STRFclustON.NEG.params.data(:,1);
+        counter = 0;
+        for w = clustOFF'
+            counter = counter + 1;
+            a = find(clustON == w);
+            if ~isempty(a)
+                tempONparams(counter,:) = [STRFclustON.NEG.params.data(a,1:end-1) STRFclustON.NEG.params.OFFmaskmean(STRFclustON.NEG.params.OFFmaskmean(:,1) == w,2)] ;
+            end
+
+        end
+
+        NEGparamsOFF = [NEGparamsOFF; tempOFFparams];
+        NEGparamsON = [NEGparamsON; tempONparams];
+    end
+end
+
+figure;
+for i = 1:6
+    subplot(2,3,i); scatter(POSparamsOFF(:,i+1),POSparamsON(:,i+1),25,'filled','markerfacecolor','k')
+    hold on; scatter(NEGparamsOFF(:,i+1),NEGparamsON(:,i+1),25,'filled','markerfacecolor',[0.4 0.4 0.4]);
+    MM = nanmax([POSparamsOFF(:,i+1);POSparamsON(:,i+1);NEGparamsOFF(:,i+1);NEGparamsON(:,i+1)]);
+    mm = nanmin([POSparamsOFF(:,i+1);POSparamsON(:,i+1);NEGparamsOFF(:,i+1);NEGparamsON(:,i+1)]);
+    line([mm MM],[mm MM],'Color','k','linestyle','--');
+    axis tight; axis square; box off;
+    set(gca,'TickDir','out');
+    xlabel('Laser OFF'); ylabel('Laser ON');
+    title(paramlabels{i});
+
+end
+suptitle('STRF parameters: units with DECREASE in FR')
+
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1600 800]);
+set(gcf,'Position',[0 0 1600 800]);
