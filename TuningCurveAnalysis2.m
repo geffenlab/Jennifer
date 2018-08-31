@@ -817,9 +817,11 @@ load('DRC001-01','params');
 randparams = params;
 times = [-0.1:0.005:0];
 freqs = params.freqs;
+nFiles = 8;
 
 temp = vertcat(allCELL{:});
 Qcell = temp(horzcat(CellQ{:}) > 0 & horzcat(CellQ{:}) < 5,:);
+strfFR = NaN(size(Qcell,1),3);
 for u = 1:size(Qcell,1)
     q = find(Qcell(u,:) == '.');
     load(['DRC001-' Qcell(u,7:q-10) '.mat'])
@@ -828,15 +830,7 @@ for u = 1:size(Qcell,1)
 %     %%%Load spike file here (also append cellInfo with STRFclust)%%%
     spikes = SpikeData(3,:);
     spikes(spikes >= stimdur) = [];
-    %Align so that first laser onset is at 0
-%     spikeshift = spikes - LaserOn1;
-%     spikeshift(spikeshift < 0) = 0;
-%     SpikeTmod = mod(spikeshift,1); %Convert spike times into 1 second chunks
 
-    clear STRFclust
-%    for chunk = [1 4];
-    %Find spike indices for different laser on/laser off chunks
-%    ind = find(SpikeTmod > win(chunk,1) & SpikeTmod <= win(chunk,2));
     randSTRFall = zeros(size(STAon,1),size(STAon,2),its);
     fprintf('Generating random STA(s)...\n')
         for i = 1:its
@@ -884,14 +878,36 @@ for u = 1:size(Qcell,1)
             STRFclustON.NEG.tCi.ClusMask = ClusMask;
         end
                 
-        STRFclustOFF.POS = calcSTRFparams(STRFclustOFF.POS,times,freqs);
-        STRFclustON.POS = calcSTRFparams(STRFclustON.POS,times,freqs);
-        STRFclustOFF.NEG = calcSTRFparams(STRFclustOFF.NEG,times,freqs);
-        STRFclustON.NEG = calcSTRFparams(STRFclustON.NEG,times,freqs);  
+        STRFclustOFF.POS = calcSTRFparams(STRFclustOFF.POS,STAoff3,times,freqs);
+        STRFclustON.POS = calcSTRFparams(STRFclustON.POS,STAon,times,freqs);
+        STRFclustOFF.NEG = calcSTRFparams(STRFclustOFF.NEG,STAoff3,times,freqs);
+        STRFclustON.NEG = calcSTRFparams(STRFclustON.NEG,STAon,times,freqs);  
         
         save(['DRC001-' Qcell(u,7:q-10) '.mat'],'STRFclustON','STRFclustOFF','-append')
+        
+        for ii = 1:nFiles
+
+            load(['SpikeMat\DRC001_LEFT-0' num2str(ii) '-' Qcell(u,7:q-10) '.mat']); %Load spike times 
+
+            spikes = SpikeData(3,:);
+            spikes(spikes >= stimdur) = [];
+            SpikeTmod = mod(spikes,1);
+            SpikeFR(ii,:) = smoothFRx4(SpikeTmod,stimdur,0.001,[0 1],5);
+        end
+        tempFR = mean(SpikeFR,1);
+        strfFR(u,1) = mean(tempFR(500:750)); %Laser ON firing rate
+        strfFR(u,2) = mean(tempFR(1:499)); %Laser OFF firing rate
+        strfFR(u,3) = std(tempFR(1:499));     
 
 end
 
+delta = strfFR(:,1) - (strfFR(:,2) - 2*strfFR(:,3));
+strfUP = find(delta > 0);
+strfcellUP = Qcell(strfUP,:);
+delta = (strfFR(:,2) - 2*strfFR(:,3)) - strfFR(:,1);
+strfDOWN = find(delta > 0);
+strfcellDOWN = Qcell(strfDOWN,:);
 
+cd(FileOutput)
+save(TITLE,'strfcellDOWN','strfcellUP','-append')
 
