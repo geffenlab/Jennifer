@@ -1,4 +1,4 @@
-function STRFclusterdata = calcSTRFparams(STRFclusterdata,times, freqs)
+function STRFclusterdata = calcSTRFparams(STRFclusterdata,STRF,times, freqs)
 %Calculate size of negative and positive lobes (if they exist), peak, etc.
 %using results of CLUSTER test
 %
@@ -23,7 +23,7 @@ if STRFclusterdata.info.Clusterdata(end) == 1
         ClustMask(ClustMask > 0) = 1;
 
         %Calculate parameters for each cluster
-        [f, t, x] = find(ClustMask.*STRFclusterdata.tCi.STA);
+        [f, t, x] = find(ClustMask.*STRF);
 
         deltaf = freqs(max(f))-freqs(min(f));
         deltat = times(max(t))-times(min(t));
