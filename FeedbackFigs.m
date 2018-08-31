@@ -2,23 +2,254 @@ FigOut = 'C:\Users\Jennifer\Dropbox\GeffenLab\Jennifer\Manuscripts\Feedback\Figu
 tunedata = 'C:\Users\Jennifer\Documents\MATLAB\TuningCurveAnalysis\Feedback ChR2 in IC.mat';
 load(tunedata);
 
+GOODCELLall = vertcat(GOODCELL{:});
+
+
 fontname = 'Arial';
-set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k');
+set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k','defaultAxesFontSize',16);
 
 
 %% ************************************************************************
 %  *****                       1. SILENCE + LASER                     *****
 %  ************************************************************************
 
+
+%%%%%%%%%%%%% I. EXAMPLE TRACE %%%%%%%%%%%%%
+% Plot Raster and smoothed FR for both 25 ms and 250 ms stimuli (these were
+% the two that significantly affect FR)
+
+EX = {'M3222-2-9-1-1'; 'M3222-3-8-2-1'}; %Example units
+for i = 1:length(EX)
+    load(['R452-' EX{i} '.mat']); %25 ms stim
+    smoothedFR = smoothFRx4(SpikeData(3,:),nRep,0.001,[0 1],5);
+    
+    subplot(2,2,1); %Raster
+    line([SpikeData(3,:); SpikeData(3,:)], [SpikeData(4,:); SpikeData(4,:)+1],'color','k','linewidth',1.5)
+    hold on; line([0.1 0.1],[0 nRep+1],'color','m','linewidth',1.5,'linestyle','--');
+         line([0.125 0.125],[0 nRep+1],'color','m','linewidth',1.5,'linestyle','--'); 
+    set(gca,'TickDir','out','XTick',[0:0.2:1],'XTickLabel',[0:0.2:1])
+    axis tight; box off;
+    ylabel('Trial #');
+    
+    subplot(2,2,3); %Smooth FR
+    plot(smoothedFR,'k','linewidth',2)
+    set(gca,'TickDir','out','XTick',[0:200:1000],'XTickLabel',[0:0.2:1])
+    axis tight; box off;
+    xlabel('Time (s)'); ylabel('Firing Rate (Hz)')
+    
+    load(['R453-' EX{i} '.mat']); %250 ms stim
+    smoothedFR = smoothFRx4(SpikeData(3,:),nRep,0.001,[0 1],5);
+
+    subplot(2,2,2); %Raster
+    line([SpikeData(3,:); SpikeData(3,:)], [SpikeData(4,:); SpikeData(4,:)+1],'color','k','linewidth',1.5)
+    hold on; line([0.1 0.1],[0 nRep+1],'color','m','linewidth',1.5,'linestyle','--');
+         line([0.35 0.35],[0 nRep+1],'color','m','linewidth',1.5,'linestyle','--'); 
+    set(gca,'TickDir','out','XTick',[0:0.2:1],'XTickLabel',[0:0.2:1])
+    axis tight; box off;
+    ylabel('Trial #');
+    
+    subplot(2,2,4); %Smooth FR
+    plot(smoothedFR,'k','linewidth',2)
+    set(gca,'TickDir','out','XTick',[0:200:1000],'XTickLabel',[0:0.2:1])
+    axis tight; box off;
+    xlabel('Time (s)'); ylabel('Firing Rate (Hz)')
+    suptitle(EX{i});
+    
+    set(gcf,'PaperPositionMode','auto');         
+    set(gcf,'PaperOrientation','landscape');
+    set(gcf,'PaperUnits','points');
+    set(gcf,'PaperSize',[1600 800]);
+    set(gcf,'Position',[0 0 1600 800]);
+
+end
+
+%%%%%%%%%%%%% II. PLOT LASER ON VS LASER OFF RESPONSE %%%%%%%%%%%%%
+
+Stim = {'R450';'R451';'R452';'R453'};
+onset = 100; %Laser onset (ms)
+dur = [1 5 25 250]; %Laser duration (ms) 
+SilenceON = NaN(size(Qcell,1),length(Stim));
+SilenceOFF = NaN(size(Qcell,1),length(Stim));
+
+% Use all cells (multiunits + single) to look for laser affect
+temp = vertcat(allCELL{:});
+Qcell = temp(find(horzcat(CellQ{:}) > 0 & horzcat(CellQ{:}) < 5),:);
+
+for u = 1:size(Qcell,1)
+    
+    for i = 1:length(Stim)
+        q = find(Qcell(u,:) == '.');
+        if exist([Stim{i} '-' Qcell(u,7:q - 10) '.mat'])
+            load([Stim{i} '-' Qcell(u,7:q - 10) '.mat']);
+        end
+        if ~isempty(SpikeData)
+            smoothedFR = smoothFRx4(SpikeData(3,:),nRep,0.001,[0 1],5);
+            FRmeanON = mean(smoothedFR(onset:onset+dur(i)));
+            FRmeanOFF = mean(smoothedFR(1:onset-1));
+            if FRmeanOFF > 0.5 % Low spontaneous firing rates can lead to outliers
+                SilenceON(u,i) = FRmeanON;
+                SilenceOFF(u,i) = FRmeanOFF;
+            end            
+        end
+    end
+end
+
+%Plot laser ON vs laser OFF and then mean for all 4 laser durations
+colour = [0.2 0.2 0.2; 0.4 0.4 0.4; 0.6 0.6 0.6; 0.8 0.8 0.8];
+subplot(4,2,[1 2 3 4]);
+for i = 1:length(Stim)
+    hold on;
+    scatter(SilenceOFF(:,i), SilenceON(:,i),25,'filled','MarkerFaceColor', colour(i,:))
+    [p_silence(i),~] = signrank(SilenceOFF(:,i), SilenceON(:,i));
+end
+max1 = nanmax(SilenceOFF(:));
+max2 = nanmax(SilenceON(:));
+line([0 nanmax(max1,max2)],[0 nanmax(max1,max2)],'linestyle','--','color','k');
+legend(['1 ms, p = ' num2str(p_silence(1))] ,['5 ms, p = ' num2str(p_silence(2))],['25 ms, p = ' num2str(p_silence(3))],['250 ms, p = ' num2str(p_silence(4))],'Location','best')
+axis square; axis tight
+xlabel('Firing Rate OFF (Hz)'); ylabel('Firing Rate ON (Hz)');
+set(gca,'TickDir','out')
+
+for i = 1:length(Stim)
+    subplot(4,2,i+4);
+    bar([nanmean(SilenceOFF(:,i)) nanmean(SilenceON(:,i))],0.5,'EdgeColor','none','FaceColor',colour(i,:));
+     hold on; errorbar([nanmean(SilenceOFF(:,i)) nanmean(SilenceON(:,i))],[nanstd(SilenceOFF(:,i))...
+        ./sqrt(sum(isnan(SilenceOFF(:,i)))) nanstd(SilenceON(:,i))./sqrt(sum(isnan(SilenceON(:,i))))],'k','LineStyle','none','LineWidth',2)
+    box off; ylabel('Firing Rate (Hz)')
+    set(gca, 'XTickLabels',{'OFF';'ON'},'TickDir','out'); axis square
+
+end
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','portrait');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[800 1600]);
+set(gcf,'Position',[0 0 800 1600]);
+
 %% ************************************************************************
 %  *****                       2. CLICK FIGURES                       *****
 %  ************************************************************************
+
+ClickOFF = [0 2 4]; %Onset of clicks in laser off condition
+ClickON = [1 3 5]; %Onset of clicks in laser on condition
+ClickDUR = 0.05; %Window (in seconds) for single click duration
+LaserON = [0.75 2.75 4.75]; %Laser onset (seconds)
+LaserDUR = 1; %Laser duration (seconds)
+
+%%%%%%%%%%%%% I. EXAMPLE TRACE %%%%%%%%%%%%%
+EX = {'M3222-2-8-1-1'};
+load(['R400-' EX{1} '.mat']);
+
+subplot(2,1,1);
+line([SpikeData(3,:); SpikeData(3,:)], [SpikeData(4,:); SpikeData(4,:)+1],'color','k','linewidth',1.5)
+hold on; line([LaserON(1) LaserON(1)],[0 nRep+1],'color','m','linewidth',1.5,'linestyle','--');
+line([LaserON(1)+LaserDUR LaserON(1)+LaserDUR],[0 nRep+1],'color','m','linewidth',1.5,'linestyle','--'); 
+line([LaserON(2) LaserON(2)],[0 nRep+1],'color','m','linewidth',1.5,'linestyle','--');
+line([LaserON(2)+LaserDUR LaserON(2)+LaserDUR],[0 nRep+1],'color','m','linewidth',1.5,'linestyle','--'); 
+line([LaserON(3) LaserON(3)],[0 nRep+1],'color','m','linewidth',1.5,'linestyle','--');
+line([LaserON(3)+LaserDUR LaserON(3)+LaserDUR],[0 nRep+1],'color','m','linewidth',1.5,'linestyle','--'); 
+box off; axis tight;
+set(gca,'TickDir','out','XTick',[0:1:6],'XTickLabel',[0:1:6]);
+ylabel('Trial #')
+
+smoothedFR = smoothFRx4(SpikeData(3,:),nRep,0.001,[0 6],5);
+subplot(2,1,2); plot(smoothedFR,'k','linewidth',2);
+box off; axis tight; 
+set(gca,'TickDir','out','XTick',[0:1000:6000],'XTickLabel',[0:1:6]);
+xlabel('Time (s)'); ylabel('Firing Rate (Hz)');
+suptitle(EX{1});
+
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1600 800]);
+set(gcf,'Position',[0 0 1600 800]);
+
+
+
+%%%%%%%%%%%%% II. Laser ON vs Laser OFF RESPONSE %%%%%%%%%%%%%
+
+% Use all cells (multiunits + single) to look for laser affect
+temp = vertcat(allCELL{:});
+Qcell = temp(horzcat(CellQ{:}) > 0 & horzcat(CellQ{:}) < 5,:);
+
+
+%Pre-allocate variables
+spontON = NaN(1,size(Qcell,1));
+spontOFF = NaN(1,size(Qcell,1));
+ClickOFF = NaN(1,size(Qcell,1));
+ClickON = NaN(1,size(Qcell,1));
+
+for u = 1:size(Qcell,1)
+    q = find(Qcell(u,:) == '.');
+    if exist(['R400-' Qcell(u,7:q - 10) '.mat'],'file')
+        load(['R400-' Qcell(u,7:q - 10) '.mat']);
+    end
+    if ~isempty(SpikeData)
+        idxOFF1 = find(SpikeData(3,:) > 0 & SpikeData(3,:) < 1);
+        idxOFF2 = find(SpikeData(3,:) > 2 & SpikeData(3,:) < 3);
+        idxOFF3 = find(SpikeData(3,:) > 4 & SpikeData(3,:) < 5);
+        SpikesOFF = SpikeData(:,[idxOFF1 idxOFF2 idxOFF3]);
+        smoothOFF = smoothFRx4(mod(SpikesOFF(3,:),1),nRep*3,0.001,[0 1],5);
+        if mean(smoothOFF(1:50)) > 2*std(smoothOFF(650:700)) %Shows click response
+            spontON(u) = mean(smoothOFF(750:end));
+            ClickOFF(u) = mean(smoothOFF([1:50 100:150 200:250 300:350 400:450 500:550]));
+
+            idxON1 = find(SpikeData(3,:) > 1 & SpikeData(3,:) < 2);
+            idxON2 = find(SpikeData(3,:) > 3 & SpikeData(3,:) < 4);
+            idxON3 = find(SpikeData(3,:) > 5 & SpikeData(3,:) < 6);
+            SpikesON = SpikeData(:,[idxON1 idxON2 idxON3]);
+            smoothON = smoothFRx4(mod(SpikesON(3,:),1),nRep*3,0.001,[0 1],5);
+            spontOFF(u) = mean(smoothON(750:end));
+            ClickON(u) = mean(smoothON([1:50 100:150 200:250 300:350 400:450 500:550]));
+        end
+        
+    end
+    
+end
+[p_click, h_click] = signrank(ClickOFF, ClickON);
+figure; subplot(1,2,1);
+scatter(ClickOFF,ClickON,25,'filled','MarkerFaceColor',[0.2 0.2 0.2])
+max1 = nanmax(ClickOFF(:));
+max2 = nanmax(ClickON(:));
+line([0 nanmax(max1,max2)],[0 nanmax(max1,max2)],'linestyle','--','color','k');
+axis square; axis tight
+set(gca,'TickDir','out');
+xlabel('Firing Rate OFF (Hz)'); ylabel('Firing Rate ON (Hz)'); title(['p = ' num2str(p_click)]);
+subplot(1,2,2);
+ bar([nanmean(ClickOFF) nanmean(ClickON)],0.5,'EdgeColor','none','FaceColor',[0.2 0.2 0.2]);
+     hold on; errorbar([nanmean(ClickOFF) nanmean(ClickON)],[nanstd(ClickOFF)...
+        ./sqrt(sum(isnan(ClickOFF))) nanstd(ClickON)./sqrt(sum(isnan(ClickON)))],'k','LineStyle','none','LineWidth',2)
+box off; ylabel('Firing Rate (Hz)'); title(['N = ' num2str(sum(isnan(ClickOFF)))]);
+set(gca, 'XTickLabels',{'OFF';'ON'},'TickDir','out'); axis square
+suptitle('Click Response')
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1000 600]);
+set(gcf,'Position',[0 0 1000 600]);
+
+
+%%%%%%%%%%%%% III. CHANGE IN SPONT VS CHANGE IN CLICK RESPONSE %%%%%%%%%%%%%
+%data calculated in previous plot section
+max1 = nanmax([spontON - spontOFF]);
+max2 = nanmax(ClickON - ClickOFF);
+min1 = nanmin(spontON - spontOFF);
+min2 = nanmin(ClickON - ClickOFF);
+
+figure;
+scatter([spontON - spontOFF],[ClickON - ClickOFF],25,'filled')
+hold on; line([min(min1, min2) max(max1, max2)], [min(min1, min2) max(max1, max2)],'linestyle','--','color','k')
+axis tight; box off; axis square
+set(gca,'TickDir','out')
+xlabel('delta Spontaneous activity (ON - OFF)'); ylabel('delta Click response (ON - OFF)')
+
+
 
 %% ************************************************************************
 %  *****                       3. TUNING FIGURES                      *****
 %  ************************************************************************
 
-%I. EXAMPLE TCs AND TIMECOURSES
+%%%%%%%%%%%%% I. EXAMPLE TCs AND TIMECOURSES %%%%%%%%%%%%%
 
 tLaserON = [0.4 0.48 0.508];
 tLaserOFF = [0.65 0.73 0.758];
@@ -68,9 +299,7 @@ print(['Example' num2str(ex)],'-dpdf','-r400')
 end
 
 %%
-%II. SPARSENESS
-
-GOODCELLall = vertcat(GOODCELL{:});
+%%%%%%%%%%%%% II. SPARSENESS %%%%%%%%%%%%%
 
 %Load tuning curve parameters
 load('D:\Code\TuningCurve\TC003_170815LEFT_stimInfo');
@@ -205,7 +434,7 @@ for ii = 1%:4
 end
 
 %%
-%III. LINEAR FITS
+%%%%%%%%%%%%% III. LINEAR FITS %%%%%%%%%%%%%
 
 onsets = {'-100 ms','-20 ms', '+8 ms'};
 
