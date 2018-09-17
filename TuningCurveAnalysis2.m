@@ -822,7 +822,7 @@ nFiles = 8;
 temp = vertcat(allCELL{:});
 Qcell = temp(horzcat(CellQ{:}) > 0 & horzcat(CellQ{:}) < 5,:);
 strfFR = NaN(size(Qcell,1),3);
-for u = 1:size(Qcell,1)
+for u = 20%1:size(Qcell,1)
     q = find(Qcell(u,:) == '.');
     load(['DRC001-' Qcell(u,7:q-10) '.mat'])
     load(['DRC001_LEFT-01-' Qcell(u,7:q-10) '.mat'])
@@ -862,6 +862,7 @@ for u = 1:size(Qcell,1)
         set(gca,'YDir','normal')
         subplot(2,2,2); imagesc(STRFclustON.POS.tCi.ClusTest)
         set(gca,'YDir','normal')
+        %pause(0.1)
         
       
         
@@ -883,7 +884,7 @@ for u = 1:size(Qcell,1)
         STRFclustOFF.NEG = calcSTRFparams(STRFclustOFF.NEG,STAoff3,times,freqs);
         STRFclustON.NEG = calcSTRFparams(STRFclustON.NEG,STAon,times,freqs);  
         
-        save(['DRC001-' Qcell(u,7:q-10) '.mat'],'STRFclustON','STRFclustOFF','-append')
+        %save(['DRC001-' Qcell(u,7:q-10) '.mat'],'STRFclustON','STRFclustOFF','-append')
         
         for ii = 1:nFiles
 
@@ -908,6 +909,6 @@ delta = (strfFR(:,2) - 2*strfFR(:,3)) - strfFR(:,1);
 strfDOWN = find(delta > 0);
 strfcellDOWN = Qcell(strfDOWN,:);
 
-cd(FileOutput)
-save(TITLE,'strfcellDOWN','strfcellUP','-append')
+%cd(FileOutput)
+%save(TITLE,'strfcellDOWN','strfcellUP','-append')
 

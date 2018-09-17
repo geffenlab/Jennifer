@@ -46,8 +46,8 @@ for n = 1%:length(MNum)
                 subplot(3, 4, 4*(i-1)+1);
                 tt1 = find(TCon.t>=.2, 1, 'first');
                 tt5 = find(TCon.t>=.8, 1, 'first');
-                fr1 = SmoothGaus(mean(TCon.TC_FR, 1), 3);
-                fr2 = SmoothGaus(mean(TCoff.TC_FR, 1), 3);
+                fr1 = SmoothGaus(mean(TCon.FRmat, 1), 3);
+                fr2 = SmoothGaus(mean(TCoff.FRmat, 1), 3);
                 plot(TCoff.t(tt1:tt5), fr1(tt1:tt5), 'k');
                 hold on;
                 plot(TCoff.t(tt1:tt5), fr2(tt1:tt5), 'r');
