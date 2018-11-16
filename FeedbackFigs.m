@@ -1,14 +1,41 @@
 FigOut = 'C:\Users\Jennifer\Dropbox\GeffenLab\Jennifer\Manuscripts\Feedback\Figures';
 tunedata = 'C:\Users\Jennifer\Documents\MATLAB\TuningCurveAnalysis\Feedback ChR2 in IC.mat';  %Calculated from TuningCurveAnalysis2.m
 load(tunedata);
+opsin = 'chr2';
 
-GOODCELLall = vertcat(GOODCELL{:});
+for z = 1:length(GOODCELL)
+    len(z) = length(GOODCELL{z}(1,:));
+end
+maxlen = max(len);
+tempcell = cell(1,length(GOODCELL));
+for z = 1:length(GOODCELL)
+    
+    tempcell{z}(:,1:len(z)) = GOODCELL{z};
+    if len(z) ~= maxlen
+        tempcell{z}(:,len(z)+1:maxlen) = ' ';
+    end
+end
+GOODCELLall = vertcat(tempcell{:});
+
 % Use all cells (multiunits + single) to look for laser affect
-temp = vertcat(allCELL{:});
+for z = 1:length(allCELL)
+    len(z) = length(allCELL{z}(1,:));
+end
+maxlen = max(len);
+tempcell = cell(1,length(allCELL));
+for z = 1:length(allCELL)
+    
+    tempcell{z}(:,1:len(z)) = allCELL{z};
+    if len(z) ~= maxlen
+        tempcell{z}(:,len(z)+1:maxlen) = ' ';
+    end
+end
+temp = vertcat(tempcell{:});
 Qcell = temp(horzcat(CellQ{:}) > 0 & horzcat(CellQ{:}) < 5,:);
 
 fontname = 'Arial';
 set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k','defaultAxesFontSize',16);
+set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k','k'})
 
 
 %% ************************************************************************
@@ -20,7 +47,8 @@ set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultText
 % Plot Raster and smoothed FR for both 25 ms and 250 ms stimuli (these were
 % the two that significantly affect FR)
 
-EX = {'M3222-2-9-1-1'; 'M3222-3-8-2-1'}; %Example units
+EX = {'M3222-2-9-1-1'; 'M3222-3-8-2-1'}; %Example units for ChR2
+%EX = {}; %Example units for ArchT
 for ex = 1:length(EX)
     cd('D:\Spikes')
     load(['R452-' EX{ex} '.mat']); %25 ms stim
@@ -66,7 +94,7 @@ for ex = 1:length(EX)
     set(gcf,'renderer','painters');
     pause(1)
     cd(FigOut)
-    print(['SilenceExample' num2str(ex)],'-dpdf','-r400')
+    print(['SilenceExample' num2str(ex) '_' opsin],'-dpdf','-r400')
 
 end
 
@@ -77,6 +105,7 @@ onset = 100; %Laser onset (ms)
 dur = [1 5 25 250]; %Laser duration (ms) 
 SilenceON = NaN(size(Qcell,1),length(Stim));
 SilenceOFF = NaN(size(Qcell,1),length(Stim));
+SilenceVAR = NaN(size(Qcell,1),length(Stim));
 
 for u = 1:size(Qcell,1)
     
@@ -89,47 +118,67 @@ for u = 1:size(Qcell,1)
             smoothedFR = smoothFRx4(SpikeData(3,:),nRep,0.001,[0 1],5);
             FRmeanON = mean(smoothedFR(onset:onset+dur(i)+20));
             FRmeanOFF = mean(smoothedFR(1:onset-1));
+            FRsdevOFF = std(smoothedFR(750:end));
             if FRmeanOFF > 0.5 % Low spontaneous firing rates can lead to outliers
                 SilenceON(u,i) = FRmeanON;
                 SilenceOFF(u,i) = FRmeanOFF;
+                SilenceVAR(u,i) = FRsdevOFF;
             end            
         end
     end
 end
+SilenceDEV = (SilenceON - SilenceOFF)./SilenceVAR;
 
-%Plot laser ON vs laser OFF and then mean for all 4 laser durations
-colour = [0.2 0.2 0.2; 0.4 0.4 0.4; 0.6 0.6 0.6; 0.8 0.8 0.8];
 figure;
-subplot(4,2,[1 2 3 4]);
+edges = [-5:0.5:5];
+%colour = [0.2 0.2 0.2; 0.4 0.4 0.4; 0.6 0.6 0.6; 0.8 0.8 0.8];
+StimTitle = {'1 ms';'5 ms';'25 ms'; '250 ms'};
 for i = 1:length(Stim)
-    hold on;
-    scatter(SilenceOFF(:,i), SilenceON(:,i),25,'filled','MarkerFaceColor', colour(i,:))
-    [p_silence(i),~] = signrank(SilenceOFF(:,i), SilenceON(:,i));
-end
-max1 = nanmax(SilenceOFF(:));
-max2 = nanmax(SilenceON(:));
-line([0 nanmax(max1,max2)],[0 nanmax(max1,max2)],'linestyle','--','color','k');
-legend(['1 ms, p = ' num2str(p_silence(1))] ,['5 ms, p = ' num2str(p_silence(2))],['25 ms, p = ' num2str(p_silence(3))],['250 ms, p = ' num2str(p_silence(4))],'Location','best')
-axis square; axis tight
-xlabel('Firing Rate OFF (Hz)'); ylabel('Firing Rate ON (Hz)');
-set(gca,'TickDir','out')
-
-for i = 1:length(Stim)
-    subplot(4,2,i+4);
-    bar([nanmean(SilenceOFF(:,i)) nanmean(SilenceON(:,i))],0.5,'EdgeColor','none','FaceColor',colour(i,:));
-     hold on; errorbar([nanmean(SilenceOFF(:,i)) nanmean(SilenceON(:,i))],[nanstd(SilenceOFF(:,i))...
-        ./sqrt(sum(isnan(SilenceOFF(:,i)))) nanstd(SilenceON(:,i))./sqrt(sum(isnan(SilenceON(:,i))))],'k','LineStyle','none','LineWidth',2)
-    box off; ylabel('Firing Rate (Hz)')
-    set(gca, 'XTickLabels',{'OFF';'ON'},'TickDir','out'); axis square
-
+    subplot(2,2,i);
+    c = histc(SilenceDEV(:,i),edges);
+    bar(edges,c,'EdgeColor','none')
+    set(gca, 'XTick',edges(1:2:end),'XTickLabels',edges(1:2:end),'TickDir','out'); box off;
+    xlabel('STDEVs above baseline')
+    ylabel('cell count')
+    title(StimTitle{i});
 end
 set(gcf,'PaperPositionMode','auto');         
-set(gcf,'PaperOrientation','portrait');
+set(gcf,'PaperOrientation','landscape');
 set(gcf,'PaperUnits','points');
-set(gcf,'PaperSize',[1200 1600]);
-set(gcf,'Position',[0 0 1200 1600]);
+set(gcf,'PaperSize',[1600 1000]);
+set(gcf,'Position',[0 0 1600 1000]);
+suptitle('Silence + Laser distributions')
 cd(FigOut)
-print('SilenceONOFF','-dpdf','-r400')
+print(['SilenceDistrib_' opsin],'-dpdf','-r400')
+
+
+%Plot laser ON vs laser OFF and then mean for all 4 laser durations
+
+
+% % for i = 1:length(Stim)
+% %     subplot(4,2,i+4);colour = [0.2 0.2 0.2; 0.4 0.4 0.4; 0.6 0.6 0.6; 0.8 0.8 0.8];
+% % figure;
+% % subplot(4,2,[1 2 3 4]);
+% % for i = 1:length(Stim)
+% %     hold on;
+% %     scatter(SilenceOFF(:,i), SilenceON(:,i),25,'filled','MarkerFaceColor', colour(i,:))
+% %     [p_silence(i),~] = signrank(SilenceOFF(:,i), SilenceON(:,i));
+% % end
+% % max1 = nanmax(SilenceOFF(:));
+% % max2 = nanmax(SilenceON(:));
+% % line([0 nanmax(max1,max2)],[0 nanmax(max1,max2)],'linestyle','--','color','k');
+% % legend(['1 ms, p = ' num2str(p_silence(1))] ,['5 ms, p = ' num2str(p_silence(2))],['25 ms, p = ' num2str(p_silence(3))],['250 ms, p = ' num2str(p_silence(4))],'Location','best')
+% % axis square; axis tight
+% % xlabel('Firing Rate OFF (Hz)'); ylabel('Firing Rate ON (Hz)');
+% % set(gca,'TickDir','out')
+% %     bar([nanmean(SilenceOFF(:,i)) nanmean(SilenceON(:,i))],0.5,'EdgeColor','none','FaceColor',colour(i,:));
+% %      hold on; errorbar([nanmean(SilenceOFF(:,i)) nanmean(SilenceON(:,i))],[nanstd(SilenceOFF(:,i))...
+% %         ./sqrt(sum(isnan(SilenceOFF(:,i)))) nanstd(SilenceON(:,i))./sqrt(sum(isnan(SilenceON(:,i))))],'k','LineStyle','none','LineWidth',2)
+% %     box off; ylabel('Firing Rate (Hz)')
+% %     set(gca, 'XTickLabels',{'OFF';'ON'},'TickDir','out'); axis square
+% % 
+% % end
+
 
 %% ************************************************************************
 %  *****                       2. CLICK FIGURES                       *****
@@ -172,7 +221,7 @@ set(gcf,'PaperSize',[1600 800]);
 set(gcf,'Position',[0 0 1600 800]);
 set(gcf,'Renderer','painters');
 cd(FigOut)
-print('ClickExample1','-dpdf','-r400')
+print(['ClickExample1_' opsin],'-dpdf','-r400')
 
 
 %%%%%%%%%%%%% II. Laser ON vs Laser OFF RESPONSE %%%%%%%%%%%%%
@@ -232,7 +281,7 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1000 600]);
 set(gcf,'Position',[0 0 1000 600]);
 cd(FigOut)
-print('ClickONOFF','-dpdf','-r400')
+print(['ClickONOFF_' opsin],'-dpdf','-r400')
 
 %%%%%%%%%%%%% III. CHANGE IN SPONT VS CHANGE IN CLICK RESPONSE %%%%%%%%%%%%%
 %data calculated in previous plot section
@@ -249,7 +298,7 @@ set(gca,'TickDir','out')
 xlabel('delta Spontaneous activity (ON - OFF)'); ylabel('delta Click response (ON - OFF)')
 
 cd(FigOut)
-print('ClickDELTA','-dpdf','-r400')
+print(['ClickDELTA_' opsin],'-dpdf','-r400')
 
 
 %% ************************************************************************
@@ -305,7 +354,7 @@ set(gcf,'PaperSize',[2000 1000]);
 set(gcf,'Position',[0 0 2000 1000]);
 
 cd(FigOut)
-print(['TuneExample' num2str(ex)],'-dpdf','-r400')
+print(['TuneExample' num2str(ex) '_' opsin],'-dpdf','-r400')
 end
 
 %%
@@ -440,7 +489,7 @@ for ii = 1:4
     set(gcf,'Position',[0 0 800 1600]);
     suptitle(['Feedback Affected Cells: ' TITLES{ii}])
     cd(FigOut)
-    print(['SparsenessAffected_' num2str(ii)],'-dpdf','-r400')
+    print(['SparsenessAffected' num2str(ii) '_' opsin],'-dpdf','-r400')
 
 end
 
@@ -471,7 +520,7 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1600 500]);
 set(gcf,'Position',[0 0 1600 500]);
 cd(FigOut)
-print('LinFit_magDOWN','-dpdf','-r400')
+print(['LinFit_magDOWN_' opsin],'-dpdf','-r400')
 
 
 fitted = LinearFits.magUP;
@@ -496,7 +545,7 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1600 500]);
 set(gcf,'Position',[0 0 1600 500]);
 cd(FigOut)
-print('LinFit_magUP','-dpdf','-r400')
+print(['LinFit_magUP_' opsin],'-dpdf','-r400')
 
 
 fitted = LinearFits.spontDOWN;
@@ -521,7 +570,7 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1600 500]);
 set(gcf,'Position',[0 0 1600 500]);
 cd(FigOut)
-print('LinFit_spontDOWN','-dpdf','-r400')
+print(['LinFit_spontDOWN_' opsin],'-dpdf','-r400')
 
 
 fitted = LinearFits.spontUP;
@@ -546,7 +595,7 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1600 500]);
 set(gcf,'Position',[0 0 1600 500]);
 cd(FigOut)
-print('LinFit_spontUP','-dpdf','-r400')
+print(['LinFit_spontUP_' opsin],'-dpdf','-r400')
 
 
 %% ************************************************************************
@@ -580,7 +629,7 @@ for ex = 3%:length(EX);
     set(gcf,'Renderer','painters');
     
     cd(FigOut)
-    print(['STRFexample' num2str(ex)],'-dpdf','-r400')    
+    print(['STRFexample' num2str(ex) '_' opsin],'-dpdf','-r400')    
 end
 
 
@@ -680,7 +729,7 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1600 800]);
 set(gcf,'Position',[0 0 1600 800]);
 cd(FigOut)
-print('STRFparamsUP','-dpdf','-r400')  
+print(['STRFparamsUP_' opsin],'-dpdf','-r400')  
 
 figure;
 for i = 1:6
@@ -696,7 +745,7 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[2000 800]);
 set(gcf,'Position',[0 0 2000 800]);
 cd(FigOut)
-print('STRFbarUP','-dpdf','-r400')  
+print(['STRFbarUP_' opsin],'-dpdf','-r400')  
 
 figure; h1 = subplot(2,1,1);
 pie([percentPOSgone, 100-percentPOSgone],{['gone (' num2str(percentPOSgone) ,'%)'],['stable (' num2str(100-percentPOSgone) ,'%)']});
@@ -713,12 +762,13 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[600 1600]);
 set(gcf,'Position',[0 0 600 1600]);
 cd(FigOut)
-print('STRFpieUP','-dpdf','-r400') 
+print(['STRFpieUP_' opsin],'-dpdf','-r400') 
 
 POSparamsOFF = [];
 POSparamsON = [];
 NEGparamsOFF = [];
 NEGparamsON = [];
+noClust = [0 0 0 NaN NaN 0]; %This will be the data if a cluster in laser OFF is not present in laser ON
 
 cd('D:\Spikes')
 for u = 1:size(strfcellDOWN,1)
@@ -736,7 +786,8 @@ for u = 1:size(strfcellDOWN,1)
             counter = counter + 1;
             a = find(clustON == w);
             if ~isempty(a)
-                tempONparams(counter,:) = [STRFclustON.POS.params.data(a,1:end-1) STRFclustON.POS.params.OFFmaskmean(find(STRFclustON.POS.params.OFFmaskmean(:,1) == w,1,'first'),2)] ;
+                %tempONparams(counter,:) = [STRFclustON.POS.params.data(a,1:end-1) STRFclustON.POS.params.OFFmaskmean(find(STRFclustON.POS.params.OFFmaskmean(:,1) == w,1,'first'),2)] ;
+                 tempONparams(counter,:) = [STRFclustON.POS.params.data(a,1:end-1)];
             end
 
         end
@@ -756,7 +807,8 @@ for u = 1:size(strfcellDOWN,1)
             counter = counter + 1;
             a = find(clustON == w);
             if ~isempty(a)
-                tempONparams(counter,:) = [STRFclustON.NEG.params.data(a,1:end-1) STRFclustON.NEG.params.OFFmaskmean(find(STRFclustON.NEG.params.OFFmaskmean(:,1) == w,1,'first'),2)] ;
+                %tempONparams(counter,:) = [STRFclustON.NEG.params.data(a,1:end-1) STRFclustON.NEG.params.OFFmaskmean(find(STRFclustON.NEG.params.OFFmaskmean(:,1) == w,1,'first'),2)] ;
+                tempONparams(counter,:) = [STRFclustON.NEG.params.data(a,1:end-1)];
             end
 
         end
@@ -784,7 +836,7 @@ NEGparamsON2(idxNEGgone,:) = [];
 
 
 figure;
-for i = 1:6
+for i = 1:5
     subplot(2,3,i); scatter(POSparamsOFF2(:,i+1),POSparamsON2(:,i+1),30,'d','filled','markerfacecolor','k')
     hold on; scatter(NEGparamsOFF2(:,i+1),NEGparamsON2(:,i+1),25,'filled','markerfacecolor',[0.4 0.4 0.4]);
     MM = nanmax([POSparamsOFF2(:,i+1);POSparamsON2(:,i+1);NEGparamsOFF2(:,i+1);NEGparamsON2(:,i+1)]);
@@ -808,15 +860,15 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1600 1000]);
 set(gcf,'Position',[0 0 1600 1000]);
 cd(FigOut)
-print('STRFparamsDOWN','-dpdf','-r400') 
+print(['STRFparamsDOWN_' opsin],'-dpdf','-r400') 
 
 figure;
-for i = 1:6
+for i = 1:5
     subplot(2,6,i); plotErrorBar([POSparamsOFF2(:,i+1) POSparamsON2(:,i+1)],'sem',{'OFF'; 'ON'});
     title(paramlabels{i});
     subplot(2,6,i+6); plotErrorBar([NEGparamsOFF2(:,i+1) NEGparamsON2(:,i+1)],'sem',{'OFF'; 'ON'});
 end
-suptitle('STRF parameters: units with INCREASE in FR')
+suptitle('STRF parameters: units with DECREASE in FR')
 
 set(gcf,'PaperPositionMode','auto');         
 set(gcf,'PaperOrientation','landscape');
@@ -824,7 +876,7 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[2000 800]);
 set(gcf,'Position',[0 0 2000 800]);
 cd(FigOut)
-print('STRFbarDOWN','-dpdf','-r400')  
+print(['STRFbarDOWN_' opsin],'-dpdf','-r400')  
 
 figure; h1 = subplot(2,1,1);
 pie([percentPOSgone, 100-percentPOSgone],{['gone (' num2str(percentPOSgone) ,'%)'],['stable (' num2str(100-percentPOSgone) ,'%)']});
@@ -841,4 +893,4 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[600 1600]);
 set(gcf,'Position',[0 0 600 1600]);
 cd(FigOut)
-print('STRFpieDOWN','-dpdf','-r400') 
+print(['STRFpieDOWN_' opsin],'-dpdf','-r400') 
