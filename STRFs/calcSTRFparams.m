@@ -9,7 +9,7 @@ function STRFclusterdata = calcSTRFparams(STRFclusterdata,STRF,times, freqs)
 %OUTPUTS:
 %   STRFparams = cluster parameters and parameter labels
 
-if STRFclusterdata.info.Clusterdata(end) == 1 
+if STRFclusterdata.info.Clusterdata(end) > 0 
     
     clustIDs = unique(STRFclusterdata.tCi.ClusMask(:))';
     clustIDs = clustIDs(clustIDs > 0);
