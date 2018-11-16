@@ -6,12 +6,12 @@
 opsin = 'archt';
 mouseline = 'camk2';
 loc = 'ic';
-cond = 'awake';
+cond = 'all';
 
 [MNum, Sesh, TITLE] = loadsessions(opsin,mouseline,loc,cond);
 
 FileOutput = 'C:\Users\Jennifer\Documents\MATLAB\TuningCurveAnalysis';
-FigOutput = 'C:\Users\Jennifer\Dropbox\GeffenLab\Jennifer\ThesisCommittee\Figures\Meeting4';
+FigOutput = 'C:\Users\Jennifer\Dropbox\GeffenLab\Jennifer\ThesisCommittee\Figures\Meeting5';
 
 disp('*******************************************************************');
 disp(['1. Experiment sessions loaded: ' TITLE]);
@@ -385,7 +385,7 @@ hold off; axis square
 xlabel('Sparseness OFF')
 ylabel('Sparseness ON')
 title('Sparseness')
-set(gca,'TickDir','out','XTick',[0 0.2 0.4 0.6 0.8 1])
+set(gca,'TickDir','out','XTick',[0 0.5 1])
 [p_sparse, h_sparse] = signrank(SidxOFF, SidxON);
 
 subplot(1,2,2);
@@ -429,9 +429,9 @@ for u = 1:length(MNum)
     a = ismember(GOODCELL{u},GOODCELLall,'rows');
     idx = IDX{u}(a);
     if ~isempty(idx)
-    FRon{u} = FR_LASER{u}(idx,:);
-    FRoff{u} = FR_NOLASER{u}(idx,:);
-    baseVAR{u} = std(FRoff{u}(:,145:235),0,2); %baseline variability
+        FRon{u} = FR_LASER{u}(idx,:);
+        FRoff{u} = FR_NOLASER{u}(idx,:);
+        baseVAR{u} = std(FRoff{u}(:,145:235),0,2); %baseline variability
     end
 end
 LaserThresh = 1; %Threshold
@@ -541,19 +541,16 @@ disp('*******************************************************************');
 %  ************************************************************************
 %Calculate sparseness for cells that show change due to laser
 fontname = 'Arial';
-set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k');
+set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k','defaultAxesFontSize',18);
 
 %Load tuning curve parameters
 afo5 = load('D:\Code\TuningCurve\R407_pars'); %Load stimulus parameters
 
 nFreq = 50;
 amps = 1;
-h1 = GOODCELLsig;
-numcell = size(h1,1);
-FR_LASER_ALL = [];
-FR_NOLASER_ALL = [];
-LASERSidxON = nan(1,numcell);
-LASERSidxOFF = nan(1,numcell);
+%h1 = GOODCELLsig;
+%numcell = size(h1,1);
+
 
 
 afo5 = load('D:\Code\TuningCurve\R407_pars'); %Load stimulus parameters
@@ -567,89 +564,98 @@ StimOrder_Laser = [Time(2:2:end); afo5.freqOrder(2:2:end); afo5.ampOrder(2:2:end
 StimOrder_NoLaser = [Time(1:2:end); afo5.freqOrder(1:2:end); afo5.ampOrder(1:2:end)];
 
 
-SpkTime_LaserAll = cell(size(h1,1),nFreq);
-SpkTime_NoLaserAll = cell(size(h1,1),nFreq);
+cellidx{1} = GOODCELLall(SigCellmagDOWN,:);
+cellidx{2} = GOODCELLall(SigCellmagUP,:);
+cellidx{3} = GOODCELLall(SigCellspontDOWN,:);
+cellidx{4} = GOODCELLall(SigCellspontUP,:);
+for vv = 1:4
+    h1 = cellidx{vv};
+    numcell = size(h1,1);
+    FR_LASER_ALL = [];
+    FR_NOLASER_ALL = [];
+    LASERSidxON = nan(1,numcell);
+    LASERSidxOFF = nan(1,numcell);
+    SpkTime_LaserAll = cell(size(h1,1),nFreq);
+    SpkTime_NoLaserAll = cell(size(h1,1),nFreq);
+    for v = 1:size(h1,1) 
 
-for v = 1:size(h1,1) 
+        match = strfind(h1(v,:), '_');
+        q = match(end);
+        load(['D:\Spikes\M' h1(v,10:13) '\SpikeMat\R407F'  h1(v,5:q-1) '.mat']); 
 
-    match = strfind(h1(v,:), '_');
-    q = match(end);
-    load(['D:\Spikes\M' h1(v,10:13) '\SpikeMat\R407F'  h1(v,5:q-1) '.mat']); 
+        SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep, Win);
+        SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep, Win);
+        for j = 1:nFreq
+            SpkTime_LaserAll{v,j} = SpkTime_Laser(j,amps,:);
+            SpkTime_NoLaserAll{v,j} = SpkTime_NoLaser(j,amps,:);
+        end
+    end
 
-    SpkTime_NoLaser = SpikeTime(StimOrder_NoLaser,SpikeData,nRep, Win);
-    SpkTime_Laser = SpikeTime(StimOrder_Laser,SpikeData,nRep, Win);
+
+    %Calculate and smooth firing rate (NOTE: difference from following
+    %section is that this includes all frequencies and all amplitudes)
+    SpikeDataLaserAll = cell(size(h1,1),nFreq);
+    SpikeDataNoLaserAll = cell(size(h1,1),nFreq);
+    clear LASER_SPIKE_ALL NOLASER_SPIKE_ALL
+    %For laser trials
     for j = 1:nFreq
-        SpkTime_LaserAll{v,j} = SpkTime_Laser(j,amps,:);
-        SpkTime_NoLaserAll{v,j} = SpkTime_NoLaser(j,amps,:);
+        for v = 1:size(h1,1)
+            for w = 1:numel(SpkTime_LaserAll{v})
+                LASER_SPIKE_ALL{v,j}{w} = [sort(SpkTime_LaserAll{v,j}{w}); w*ones(1,length(SpkTime_LaserAll{v,j}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
+                SpikeDataLaserAll{v,j} = [SpikeDataLaserAll{v,j} LASER_SPIKE_ALL{v,j}{w}]; %Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
+            end
+            FR_LASER_ALL(j,v,:) = smoothFRx4(SpikeDataLaserAll{v,j},numel(LASER_SPIKE_ALL{v,j}),0.001,[-Win Win],5);
+
+            %For no laser trials
+            for w = 1:numel(SpkTime_NoLaserAll{v})
+                NOLASER_SPIKE_ALL{v,j}{w} = [sort(SpkTime_NoLaserAll{v,j}{w}); w*ones(1,length(SpkTime_NoLaserAll{v,j}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
+                SpikeDataNoLaserAll{v,j} = [SpikeDataNoLaserAll{v,j} NOLASER_SPIKE_ALL{v,j}{w}];%Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
+            end
+            FR_NOLASER_ALL(j,v,:) = smoothFRx4(SpikeDataNoLaserAll{v,j},numel(NOLASER_SPIKE_ALL{v,j}),0.001,[-Win Win],5);
+
+        end
     end
-end
 
 
-%Calculate and smooth firing rate (NOTE: difference from following
-%section is that this includes all frequencies and all amplitudes)
-SpikeDataLaserAll = cell(size(h1,1),nFreq);
-SpikeDataNoLaserAll = cell(size(h1,1),nFreq);
-clear LASER_SPIKE_ALL NOLASER_SPIKE_ALL
-%For laser trials
-for j = 1:nFreq
+    %Calculate Sparseness index for each cell
+
+
     for v = 1:size(h1,1)
-        for w = 1:numel(SpkTime_LaserAll{v})
-            LASER_SPIKE_ALL{v,j}{w} = [sort(SpkTime_LaserAll{v,j}{w}); w*ones(1,length(SpkTime_LaserAll{v,j}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
-            SpikeDataLaserAll{v,j} = [SpikeDataLaserAll{v,j} LASER_SPIKE_ALL{v,j}{w}]; %Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
-        end
-        FR_LASER_ALL(j,v,:) = smoothFRx4(SpikeDataLaserAll{v,j},numel(LASER_SPIKE_ALL{v,j}),0.001,[-Win Win],5);
+       for j = 1:nFreq
+           mFR_ON(j) = mean(FR_LASER_ALL(j,v,241:290));
+           mFR_OFF(j) = mean(FR_NOLASER_ALL(j,v,241:290));
+       end
 
-        %For no laser trials
-        for w = 1:numel(SpkTime_NoLaserAll{v})
-            NOLASER_SPIKE_ALL{v,j}{w} = [sort(SpkTime_NoLaserAll{v,j}{w}); w*ones(1,length(SpkTime_NoLaserAll{v,j}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
-            SpikeDataNoLaserAll{v,j} = [SpikeDataNoLaserAll{v,j} NOLASER_SPIKE_ALL{v,j}{w}];%Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
-        end
-        FR_NOLASER_ALL(j,v,:) = smoothFRx4(SpikeDataNoLaserAll{v,j},numel(NOLASER_SPIKE_ALL{v,j}),0.001,[-Win Win],5);
-
+        LASERSidxON(v) = Sparseness(mFR_ON,nFreq);  
+        LASERSidxOFF(v) = Sparseness(mFR_OFF,nFreq);  
     end
-end
 
 
-%Calculate Sparseness index for each cell
-
-
-for v = 1:numcell
-   for j = 1:nFreq
-       mFR_ON(j) = mean(FR_LASER_ALL(j,v,241:290));
-       mFR_OFF(j) = mean(FR_NOLASER_ALL(j,v,241:290));
-   end
-
-    LASERSidxON(v) = Sparseness(mFR_ON,nFreq);  
-    LASERSidxOFF(v) = Sparseness(mFR_OFF,nFreq);  
-end
-
-
-
-
-figure; 
-    subplot(1,2,1);
+    subplot(4,2,(2*vv-1));
     scatter(LASERSidxOFF, LASERSidxON, 25,'filled')
     hold on; line([0 1], [0 1],'Color','k','LineStyle','--')
     hold off; axis square
     xlabel('Sparseness OFF')
     ylabel('Sparseness ON')
-    set(gca,'TickDir','out','XTick',[0 0.2 0.4 0.6 0.8 1])
-    [p_LASERsparse, h_LASERsparse] = signrank(LASERSidxOFF, LASERSidxON);
+    set(gca,'TickDir','out','XTick',[0 0.5 1])
+    if ~isempty(LASERSidxOFF)
+        [p_LASERsparse(vv), h_LASERsparse(vv)] = signrank(LASERSidxOFF, LASERSidxON);
+    end
 
-    subplot(1,2,2);
+    subplot(4,2,2*vv);
     bar([nanmean(LASERSidxOFF) nanmean(LASERSidxON)],0.5,'EdgeColor','none');
     hold on; errorbar([nanmean(LASERSidxOFF) nanmean(LASERSidxON)],[nanstd(LASERSidxOFF)...
         ./sqrt(length(LASERSidxOFF)) nanstd(LASERSidxON)./sqrt(length(LASERSidxON))],'k','LineStyle','none','LineWidth',2)
     box off
     ylabel('Sparseness')
     set(gca, 'XTickLabels',{'OFF';'ON'},'TickDir','out','YLim',[0 1]); axis square
-
+end
 
 set(gcf,'PaperPositionMode','auto');         
-set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperOrientation','portrait');
 set(gcf,'PaperUnits','points');
-set(gcf,'PaperSize',[800 400]);
-set(gcf,'Position',[0 0 800 400]);
+set(gcf,'PaperSize',[600 1000]);
+set(gcf,'Position',[0 0 600 1000]);
 suptitle([TITLE ': Affected cells'])
 cd(FigOutput)
 print(['LASERsparseness_' TITLE],'-dpdf','-r400')
@@ -658,7 +664,7 @@ cd(FileOutput)
 save(TITLE,'h_LASERsparse','p_LASERsparse','LASERSidxON','LASERSidxOFF','-append')
 
 disp('*******************************************************************');
-disp(['8. Sparseness of ' num2str(size(h1,1)) ' affected cells: h = ' num2str(h_sparse) ' and p = ' num2str(p_sparse)]);
+disp(['8. Sparseness of ' num2str(size(h1,1)) ' affected cells: h = ' num2str(h_LASERsparse) ' and p = ' num2str(p_LASERsparse)]);
 disp('*******************************************************************');
 
 
