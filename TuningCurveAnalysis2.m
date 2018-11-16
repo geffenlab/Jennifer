@@ -9,7 +9,7 @@ loc = 'ic';
 [MNum, Sesh, TITLE] = loadsessions2(opsin,loc);
 
 FileOutput = 'C:\Users\Jennifer\Documents\MATLAB\TuningCurveAnalysis';
-FigOutput = 'C:\Users\Jennifer\Dropbox\GeffenLab\Jennifer\ThesisCommittee\Figures\Meeting4';
+FigOutput = 'C:\Users\Jennifer\Dropbox\GeffenLab\Jennifer\ThesisCommittee\Figures\Meeting5';
 
 disp('*******************************************************************');
 disp(['1. Experiment sessions loaded: ' TITLE]);
@@ -456,9 +456,23 @@ suptitle(TITLE)
 cd(FigOutput)
 print(['laser_' TITLE],'-dpdf','-r400')
 
-%Identify which cells show a laser effect in either direction
+%This for loop is because file names from kilosort are different length
+%from plexon so need to adjust to concatenate
+for z = 1:length(GOODCELL)
+    len(z) = length(GOODCELL{z}(1,:));
+end
+maxlen = max(len);
+tempcell = cell(1,length(GOODCELL));
+for z = 1:length(GOODCELL)
+    
+    tempcell{z}(:,1:len(z)) = GOODCELL{z};
+    if len(z) ~= maxlen
+        tempcell{z}(:,len(z)+1:maxlen) = ' ';
+    end
+end
+
 IDXall = horzcat(IDX{:});
-GOODCELLall = vertcat(GOODCELL{:});
+GOODCELLall = vertcat(tempcell{:});
 IDXup = IDXall(unique([SigCellmagUP SigCellspontUP]));
 GOODCELLup = GOODCELLall(unique([SigCellmagUP SigCellspontUP]),:);
 IDXdown = IDXall(unique([SigCellmagDOWN SigCellspontDOWN]));
@@ -605,7 +619,7 @@ cd(FileOutput)
 save(TITLE,'h_LASERsparse','p_LASERsparse','LASERSidxON','LASERSidxOFF','-append')
 
 disp('*******************************************************************');
-disp(['6. Sparseness of affected cells: h = ' num2str(h_sparse) ' and p = ' num2str(p_sparse)]);
+disp(['6. Sparseness of affected cells: h = ' num2str(h_LASERsparse) ' and p = ' num2str(p_LASERsparse)]);
 disp('*******************************************************************');
 
 %% ************************************************************************
@@ -799,7 +813,7 @@ save(TITLE,'LinearFits','linearparams','-append')
 %% ************************************************************************
 %  *****                        7.STRF ANALYSIS                       *****
 %  ************************************************************************
-
+cd D:\Spikes
 %parameters
 its = 1; %iterations for random STA
 
@@ -811,6 +825,7 @@ LaserDur = 0.25;
 stimdur = 300;
 win = [0 0.25; 0.25 0.5; 0.5 0.75; 0.75 1];
 STAwin = 0.1;
+bootstrap = 100;
 
 %Load stimulus parameters
 load('DRC001-01','params');
@@ -819,10 +834,25 @@ times = [-0.1:0.005:0];
 freqs = params.freqs;
 nFiles = 8;
 
-temp = vertcat(allCELL{:});
+
+for z = 1:length(allCELL)
+    len(z) = length(allCELL{z}(1,:));
+end
+maxlen = max(len);
+tempcell = cell(1,length(allCELL));
+for z = 1:length(allCELL)
+    
+    tempcell{z}(:,1:len(z)) = allCELL{z};
+    if len(z) ~= maxlen
+        tempcell{z}(:,len(z)+1:maxlen) = ' ';
+    end
+end
+temp = vertcat(tempcell{:});
+
 Qcell = temp(horzcat(CellQ{:}) > 0 & horzcat(CellQ{:}) < 5,:);
 strfFR = NaN(size(Qcell,1),3);
-for u = 20%1:size(Qcell,1)
+
+for u = 3%1:size(Qcell,1)
     q = find(Qcell(u,:) == '.');
     load(['DRC001-' Qcell(u,7:q-10) '.mat'])
     load(['DRC001_LEFT-01-' Qcell(u,7:q-10) '.mat'])
@@ -831,84 +861,115 @@ for u = 20%1:size(Qcell,1)
     spikes = SpikeData(3,:);
     spikes(spikes >= stimdur) = [];
 
-    randSTRFall = zeros(size(STAon,1),size(STAon,2),its);
-    fprintf('Generating random STA(s)...\n')
-        for i = 1:its
-            fprintf('Iteration %02d/%02d...\n',i,its);
-            % make a stim shuffle index
-            idx = randperm(size(params.dbs,2));
-            randparams.dbs = params.dbs(:,idx);
-            % make a new sta from shuffled stim
-            randSTRFall(:,:,i) = genSTRF(spikes,randparams,STAwin);
-        end
-
-        % get the mean matrix of the permutation - this is the noise:
-        randSTRF = mean(randSTRFall,3);  
         
-
-        STRFclustON.POS = calcSTRFcluster(STAon,randSTRF,sigma_b,p,tC);
-        STRFclustON.NEG = calcSTRFcluster(-STAon,-randSTRF,sigma_b,p,tC);
-        STRFclustOFF.POS = calcSTRFcluster(STAoff3,randSTRF,sigma_b,p,tC);
-        STRFclustOFF.NEG = calcSTRFcluster(-STAoff3,-randSTRF,sigma_b,p,tC);
+        BOOT = cell(bootstrap,4);
+        clust{1} = zeros(size(STAon,1),size(STAon,2),bootstrap); clust{2} = zeros(size(STAon,1),size(STAon,2),bootstrap); 
+        clust{3} = zeros(size(STAon,1),size(STAon,2),bootstrap); clust{4} = zeros(size(STAon,1),size(STAon,2),bootstrap);
+        for b = 1:bootstrap
+                randSTRFall = zeros(size(STAon,1),size(STAon,2),its);
+            fprintf('Generating random STA(s)...\n')
+            for i = 1:its
+                fprintf('Iteration %02d/%02d...\n',i,its);
+                % make a stim shuffle index
+                idx = randperm(size(params.dbs,2));
+                randparams.dbs = params.dbs(:,idx);
+                % make a new sta from shuffled stim
+                randSTRFall(:,:,i) = genSTRF(spikes,randparams,STAwin);
+            end
+            randSTRF = mean(randSTRFall,3); % get the mean matrix of the permutation - this is the noise
+        
+            BOOT{b,1} = calcSTRFcluster(STAon,randSTRF,sigma_b,p,tC);
+            BOOT{b,2} = calcSTRFcluster(-STAon,-randSTRF,sigma_b,p,tC);
+            BOOT{b,3} = calcSTRFcluster(STAoff3,randSTRF,sigma_b,p,tC);
+            BOOT{b,4} = calcSTRFcluster(-STAoff3,-randSTRF,sigma_b,p,tC);
+            clust{1}(:,:,b) = BOOT{b,1}.tCi.ClusMask;
+            clust{2}(:,:,b) = BOOT{b,2}.tCi.ClusMask;
+            clust{3}(:,:,b) = BOOT{b,3}.tCi.ClusMask;
+            clust{4}(:,:,b) = BOOT{b,4}.tCi.ClusMask;
+                
+%             STRFclustON.POS = calcSTRFcluster(STAon,randSTRF,sigma_b,p,tC);
+%             STRFclustON.NEG = calcSTRFcluster(-STAon,-randSTRF,sigma_b,p,tC);
+%             STRFclustOFF.POS = calcSTRFcluster(STAoff3,randSTRF,sigma_b,p,tC);
+%             STRFclustOFF.NEG = calcSTRFcluster(-STAoff3,-randSTRF,sigma_b,p,tC);
+            
+        end
+        
+        %Check for significance based on bootstrap and make new mask for
+        %significant pixels
+        bootThresh = 0.9; %Fraction
+        for i = 1:4
+            temp = sum(clust{i} > 0,3);
+            temp2 = temp;
+            temp2(temp2 < bootThresh*bootstrap) = 0;
+            MASK{i} = bwlabel(temp2);
+        end
+        STRFclustON.POS.tCi.ClusMask = MASK{1};  STRFclustON.POS.tCi.p = p; STRFclustON.POS.tCi.tC = tC; STRFclustON.POS.info.Clusterdata = unique(MASK{1}(:)); STRFclustON.POS.tCi.STA = BOOT{1,1}.tCi.STA;
+        STRFclustON.NEG.tCi.ClusMask = MASK{2}; STRFclustON.NEG.tCi.p = p; STRFclustON.NEG.tCi.tC = tC; STRFclustON.NEG.info.Clusterdata = unique(MASK{2}(:)); STRFclustON.NEG.tCi.STA = BOOT{1,2}.tCi.STA;
+        STRFclustOFF.POS.tCi.ClusMask = MASK{3}; STRFclustOFF.POS.tCi.p = p; STRFclustOFF.POS.tCi.tC = tC; STRFclustOFF.POS.info.Clusterdata = unique(MASK{3}(:)); STRFclustOFF.POS.tCi.STA = BOOT{1,3}.tCi.STA;
+        STRFclustOFF.NEG.tCi.ClusMask = MASK{4}; STRFclustOFF.NEG.tCi.p = p; STRFclustOFF.NEG.tCi.tC = tC; STRFclustOFF.NEG.info.Clusterdata = unique(MASK{4}(:)); STRFclustOFF.NEG.tCi.STA = BOOT{1,4}.tCi.STA;
         
         %Plot masks for positive lobe just to check if cluster test seems
         %reasonable
-        MM = max(max([STAon;STAoff3]));
-        mm = min(min([STAon;STAoff3]));
-        subplot(2,2,1); plotSTA([-0.1:0.005:0],params.freqs/1000,STAon,1,[mm MM]);
+% % %         MM = max(max([STAon;STAoff3]));
+% % %         mm = min(min([STAon;STAoff3]));
+% % %         subplot(2,2,1); plotSTA([-0.1:0.005:0],params.freqs/1000,STAon,1,[mm MM]);
+% % % 
+% % %         subplot(2,2,3); plotSTA([-0.1:0.005:0],params.freqs/1000,STAoff3,1,[mm MM]);
+% % %         subplot(2,2,4); imagesc(STRFclustOFF.POS.tCi.ClusTest)
+% % %         set(gca,'YDir','normal')
+% % %         subplot(2,2,2); imagesc(STRFclustON.POS.tCi.ClusTest)
+% % %         set(gca,'YDir','normal')
+% % %         pause(0.1)
+% % %         
+% % %       
+% % %   
 
-        subplot(2,2,3); plotSTA([-0.1:0.005:0],params.freqs/1000,STAoff3,1,[mm MM]);
-        subplot(2,2,4); imagesc(STRFclustOFF.POS.tCi.ClusTest)
-        set(gca,'YDir','normal')
-        subplot(2,2,2); imagesc(STRFclustON.POS.tCi.ClusTest)
-        set(gca,'YDir','normal')
-        %pause(0.1)
-        
-      
-        
-        if STRFclustOFF.POS.info.Clusterdata(end) == 1 && STRFclustON.POS.info.Clusterdata(end) == 1 
-            [ClusMask, STRFclustON.POS.params.OFFmaskmean] = matchSTRFclust(STRFclustOFF.POS.tCi.ClusMask,STRFclustON.POS.tCi.ClusMask,STAon);
-            STRFclustON.POS.tCi.ClusMaskOrig = STRFclustON.POS.tCi.ClusMask;
-            STRFclustON.POS.tCi.ClusMask = ClusMask;
-        end
-                           
-        
-        if STRFclustOFF.NEG.info.Clusterdata(end) == 1 && STRFclustON.NEG.info.Clusterdata(end) == 1 
-            [ClusMask, STRFclustON.NEG.params.OFFmaskmean] = matchSTRFclust(STRFclustOFF.NEG.tCi.ClusMask,STRFclustON.NEG.tCi.ClusMask,STAon);
-            STRFclustON.NEG.tCi.ClusMaskOrig = STRFclustON.NEG.tCi.ClusMask;
-            STRFclustON.NEG.tCi.ClusMask = ClusMask;
-        end
-                
-        STRFclustOFF.POS = calcSTRFparams(STRFclustOFF.POS,STAoff3,times,freqs);
-        STRFclustON.POS = calcSTRFparams(STRFclustON.POS,STAon,times,freqs);
-        STRFclustOFF.NEG = calcSTRFparams(STRFclustOFF.NEG,STAoff3,times,freqs);
-        STRFclustON.NEG = calcSTRFparams(STRFclustON.NEG,STAon,times,freqs);  
-        
-        %save(['DRC001-' Qcell(u,7:q-10) '.mat'],'STRFclustON','STRFclustOFF','-append')
-        
-        for ii = 1:nFiles
-
-            load(['SpikeMat\DRC001_LEFT-0' num2str(ii) '-' Qcell(u,7:q-10) '.mat']); %Load spike times 
-
-            spikes = SpikeData(3,:);
-            spikes(spikes >= stimdur) = [];
-            SpikeTmod = mod(spikes,1);
-            SpikeFR(ii,:) = smoothFRx4(SpikeTmod,stimdur,0.001,[0 1],5);
-        end
-        tempFR = mean(SpikeFR,1);
-        strfFR(u,1) = mean(tempFR(500:750)); %Laser ON firing rate
-        strfFR(u,2) = mean(tempFR(1:499)); %Laser OFF firing rate
-        strfFR(u,3) = std(tempFR(1:499));     
+% % % %         %Match clusters in ON and OFF conditions
+% % % %         if STRFclustOFF.POS.info.Clusterdata(end) > 0 && STRFclustON.POS.info.Clusterdata(end) > 0
+% % % %             [ClusMask, STRFclustON.POS.params.OFFmaskmean] = matchSTRFclust(STRFclustOFF.POS.tCi.ClusMask,STRFclustON.POS.tCi.ClusMask,STAon);
+% % % %             STRFclustON.POS.tCi.ClusMaskOrig = STRFclustON.POS.tCi.ClusMask;
+% % % %             STRFclustON.POS.tCi.ClusMask = ClusMask;
+% % % %         end
+% % % %                            
+% % % %         
+% % % %         if STRFclustOFF.NEG.info.Clusterdata(end) > 0 && STRFclustON.NEG.info.Clusterdata(end) > 0
+% % % %             [ClusMask, STRFclustON.NEG.params.OFFmaskmean] = matchSTRFclust(STRFclustOFF.NEG.tCi.ClusMask,STRFclustON.NEG.tCi.ClusMask,STAon);
+% % % %             STRFclustON.NEG.tCi.ClusMaskOrig = STRFclustON.NEG.tCi.ClusMask;
+% % % %             STRFclustON.NEG.tCi.ClusMask = ClusMask;
+% % % %         end
+% % % %         
+% % % %         
+% % % %         %Calculate parameters        
+% % % %         STRFclustOFF.POS = calcSTRFparams(STRFclustOFF.POS,STAoff3,times,freqs);
+% % % %         STRFclustON.POS = calcSTRFparams(STRFclustON.POS,STAon,times,freqs);
+% % % %         STRFclustOFF.NEG = calcSTRFparams(STRFclustOFF.NEG,STAoff3,times,freqs);
+% % % %         STRFclustON.NEG = calcSTRFparams(STRFclustON.NEG,STAon,times,freqs);  
+% % % %         
+% % % %         save(['DRC001-' Qcell(u,7:q-10) '.mat'],'STRFclustON','STRFclustOFF','-append')
+% % % %         
+% % % %         for ii = 1:nFiles
+% % % % 
+% % % %             load(['SpikeMat\DRC001_LEFT-0' num2str(ii) '-' Qcell(u,7:q-10) '.mat']); %Load spike times 
+% % % % 
+% % % %             spikes = SpikeData(3,:);
+% % % %             spikes(spikes >= stimdur) = [];
+% % % %             SpikeTmod = mod(spikes,1);
+% % % %             SpikeFR(ii,:) = smoothFRx4(SpikeTmod,stimdur,0.001,[0 1],5);
+% % % %         end
+% % % %         tempFR = mean(SpikeFR,1);
+% % % %         strfFR(u,1) = mean(tempFR(500:750)); %Laser ON firing rate
+% % % %         strfFR(u,2) = mean(tempFR(1:499)); %Laser OFF firing rate
+% % % %         strfFR(u,3) = std(tempFR(1:499));     
 
 end
-
-delta = strfFR(:,1) - (strfFR(:,2) - 2*strfFR(:,3));
-strfUP = find(delta > 0);
-strfcellUP = Qcell(strfUP,:);
-delta = (strfFR(:,2) - 2*strfFR(:,3)) - strfFR(:,1);
-strfDOWN = find(delta > 0);
-strfcellDOWN = Qcell(strfDOWN,:);
-
-%cd(FileOutput)
-%save(TITLE,'strfcellDOWN','strfcellUP','-append')
+% % % % Thresh = 1;
+% % % % delta = strfFR(:,1) - (strfFR(:,2) + Thresh*strfFR(:,3));
+% % % % strfUP = find(delta > 0);
+% % % % strfcellUP = Qcell(strfUP,:);
+% % % % delta = (strfFR(:,2) - Thresh*strfFR(:,3)) - strfFR(:,1);
+% % % % strfDOWN = find(delta > 0);
+% % % % strfcellDOWN = Qcell(strfDOWN,:);
+% % % % 
+% % % % cd(FileOutput)
+% % % % save(TITLE,'strfcellDOWN','strfcellUP','strfFR','-append')
 
