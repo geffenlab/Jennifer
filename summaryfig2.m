@@ -2,7 +2,7 @@
 %  *****                   1. EXPERIMENT SESSIONS                     *****
 %  ************************************************************************
 clear all
-opsin = 'chr2';
+opsin = 'archt';
 loc = 'ic';
 
 [MNum, ~, ~] = loadsessions2(opsin,loc);
