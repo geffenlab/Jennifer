@@ -3,8 +3,8 @@
 %  ************************************************************************
 % Load mouse numbers and session numbers for particular set of experimental
 % conditions.
-opsin = 'archt';
-mouseline = 'camk2';
+opsin = 'chr2';
+mouseline = 'som';
 loc = 'ic';
 cond = 'all';
 
@@ -12,6 +12,11 @@ cond = 'all';
 
 FileOutput = 'C:\Users\Jennifer\Documents\MATLAB\TuningCurveAnalysis';
 FigOutput = 'C:\Users\Jennifer\Dropbox\GeffenLab\Jennifer\ThesisCommittee\Figures\Meeting5';
+
+fontname = 'Arial';
+set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k','defaultAxesFontSize',18);
+set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k','k'})
+
 
 disp('*******************************************************************');
 disp(['1. Experiment sessions loaded: ' TITLE]);
@@ -122,6 +127,7 @@ aveOFF = cell(1,length(MNum));
 magON = cell(1,length(MNum));
 magOFF = cell(1,length(MNum));
 idxGOOD = cell(1,length(MNum));
+cellTT = cell(1,length(MNum));
 
 for u = 1:length(MNum)
     %Select good cells
@@ -146,6 +152,7 @@ for u = 1:length(MNum)
         spontON{u}(j) = mean(FR_LASER{u}(IDX{u}(j),spontIDX)); spontOFF{u}(j) = mean(FR_NOLASER{u}(IDX{u}(j),spontIDX));
         aveON{u}(j) = mean(FR_LASER{u}(IDX{u}(j),toneIDX)); aveOFF{u}(j) = mean(FR_NOLASER{u}(IDX{u}(j),toneIDX));
         magON{u}(j) = aveON{u}(j) - spontON{u}(j); magOFF{u}(j) = aveOFF{u}(j) - spontOFF{u}(j);
+        cellTT{u}(j) = str2num(GOODCELL{u}(j,17)); %Extract tetrode number
     end
     
 end
@@ -154,10 +161,12 @@ spontOFFall = [spontOFF{:}];
 spontONall = [spontON{:}];
 magOFFall = [magOFF{:}];
 magONall = [magON{:}];
+cellTTall = [cellTT{:}];
 
 
 NumberOfCells = length([IDX{:}]);
-save(TITLE,'GOODCELL','IDX','magONall','magOFFall','spontONall','spontOFFall','spontIDX','toneIDX','-append')
+cd(FileOutput)
+save(TITLE,'GOODCELL','IDX','magONall','magOFFall','spontONall','spontOFFall','spontIDX','toneIDX','cellTTall','-append')
 
 disp('*******************************************************************');
 disp(['3. ' num2str(NumberOfCells) ' cells with tone response']);
@@ -224,9 +233,12 @@ magOFFall2(badIDX) = [];
 magONall2 = magONall;
 magONall2(badIDX) = [];
 
+cellTTall2 = cellTTall;
+cellTTall2(badIDX) = [];
+
 NumberOfCellsUse = length(spontOFFall2);
 
-save(TITLE,'GOODCELLall','magONall2','magOFFall2','spontONall2','spontOFFall2','Thresh','-append')
+save(TITLE,'GOODCELLall','magONall2','magOFFall2','spontONall2','spontOFFall2','Thresh','cellTTall2','-append')
 
 disp('*******************************************************************');
 disp(['4. ' num2str(NumberOfCellsUse) ' usable cells']);
@@ -240,13 +252,13 @@ disp('*******************************************************************');
 % figure.
 
 fontname = 'Arial';
-set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k');
+set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k','defaultAxesFontSize',18);
+set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k','k'})
 
 %figure('rend','painters','pos',[10 400 2000 400]); 
 figure;
 subplot(1,4,1); scatter(spontOFFall2, spontONall2,25,'filled')
 LIM = max([spontOFFall2, spontONall2]);
-LIM = 50;
 hold on; line([0 LIM], [0 LIM],'Color','k','LineStyle','--');
 hold off;
 set(gca,'TickDir','out'); axis square
@@ -260,12 +272,10 @@ hold on; errorbar([mean(spontOFFall2) mean(spontONall2)],[std(spontOFFall2)./sqr
 box off
 ylabel('Firing rate (Hz)')
 set(gca, 'XTickLabels',{'OFF';'ON'},'TickDir','out'); axis square
-set(gca,'YLim',[0 15])
 [p_spont, h_spont] = signrank(spontOFFall2, spontONall2);
 
 subplot(1,4,3); scatter(magOFFall2, magONall2,25,'filled')
 LIM = max([magOFFall2, magONall2]);
-LIM = 50;
 hold on; line([0 LIM], [0 LIM], 'Color','k','LineStyle','--');
 hold off;
 set(gca,'TickDir','out'); axis square
@@ -279,21 +289,56 @@ hold on; errorbar([mean(magOFFall2) mean(magONall2)],[std(magOFFall2)./sqrt(leng
 box off
 ylabel('Firing rate (Hz)')
 set(gca, 'XTickLabels',{'OFF';'ON'},'TickDir','out'); axis square
-set(gca,'YLim',[0 30])
 [p_mag, h_mag] = signrank(magOFFall2, magONall2);
 
 suptitle(TITLE);
-cd(FileOutput);
-save(TITLE,'h_mag','p_mag','h_spont','p_spont','-append')
+%cd(FileOutput);
+%save(TITLE,'h_mag','p_mag','h_spont','p_spont','-append')
 
-cd(FigOutput)
+%cd(FigOutput)
 set(gcf,'PaperPositionMode','auto');         
 set(gcf,'PaperOrientation','landscape');
 set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1600 400]);
 set(gcf,'Position',[0 0 1600 400]);
-print(TITLE,'-dpdf','-r400')
+%print(TITLE,'-dpdf','-r400')
 
+%%%%%%%%%%%% Plot difference based on tetrode # %%%%%%%%%%%%
+
+figure; 
+subplot(1,2,1);
+scatter(cellTTall2,spontONall2 - spontOFFall2,25,'filled','b')
+set(gca,'XTick',[1:10],'XTickLabel',[1:10],'TickDir','out')
+xlabel('Tetrode')
+ylabel('delta Spontaneous activity (ON - OFF)')
+line([0 11],[0 0],'Color','k','LineStyle','--');
+axis tight
+
+infraIDX = find(cellTTall2 == 7 | cellTTall2 == 8 | cellTTall2 == 9 | cellTTall2 == 10);
+granIDX = find(cellTTall2 == 4 | cellTTall2 == 5);
+supraIDX = find(cellTTall2 == 1 | cellTTall2 == 2);
+
+subplot(1,2,2); hold on;
+scatter(ones(1,length(supraIDX)),spontONall2(supraIDX) - spontOFFall2(supraIDX),25,'filled','b')
+line([0.9 1.1],[mean(spontONall2(supraIDX) - spontOFFall2(supraIDX)) mean(spontONall2(supraIDX) - spontOFFall2(supraIDX))],'Color','r','LineWidth',4)
+scatter(2*ones(1,length(granIDX)),spontONall2(granIDX) - spontOFFall2(granIDX),25,'filled','b')
+line([1.9 2.1],[mean(spontONall2(granIDX) - spontOFFall2(granIDX)) mean(spontONall2(granIDX) - spontOFFall2(granIDX))],'Color','r','LineWidth',4)
+scatter(3*ones(1,length(infraIDX)),spontONall2(infraIDX) - spontOFFall2(infraIDX),25,'filled','b')
+line([2.9 3.1],[mean(spontONall2(infraIDX) - spontOFFall2(infraIDX)) mean(spontONall2(infraIDX) - spontOFFall2(infraIDX))],'Color','r','LineWidth',4)
+line([0 4],[0 0],'Color','k','LineStyle','--');
+set(gca,'TickDir','out','XTick',[1:3],'XTickLabel',{'supragranular','granular','infragranular'})
+xtickangle(20)
+xlabel('Layer')
+axis tight
+
+suptitle(TITLE);
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1200 600]);
+set(gcf,'Position',[0 0 1200 600]);
+%cd(FigOutput)
+%print(['Layer_' TITLE],'-dpdf','-r400')
 
 disp('*******************************************************************');
 disp(['5. Response magnitude: h = ' num2str(h_mag) ' and p = ' num2str(p_mag)]);
@@ -317,6 +362,7 @@ trialdur = afo5.interval+afo5.soundLen;
 dur = trialdur*length(afo5.freqOrder);
 Time = 0:trialdur:dur; %Each repetition is 400 seconds long, each trial is 500ms long
 Time = Time(1:end-1);
+freqs = unique(afo5.freqOrder);
 
 StimOrder_Laser = [Time(2:2:end); afo5.freqOrder(2:2:end); afo5.ampOrder(2:2:end)];
 StimOrder_NoLaser = [Time(1:2:end); afo5.freqOrder(1:2:end); afo5.ampOrder(1:2:end)];
@@ -373,9 +419,11 @@ for v = 1:numcell
        mFR_ON(j) = mean(FR_LASER_ALL(j,v,241:290));
        mFR_OFF(j) = mean(FR_NOLASER_ALL(j,v,241:290));
    end
+   mFR_ON(freqs < 3000 | freqs > 70000) = [];
+   mFR_OFF(freqs < 3000 | freqs > 70000) = [];
        
-    SidxON(v) = Sparseness(mFR_ON,nFreq);  
-    SidxOFF(v) = Sparseness(mFR_OFF,nFreq);  
+    SidxON(v) = Sparseness(mFR_ON,length(mFR_ON));  
+    SidxOFF(v) = Sparseness(mFR_OFF,length(mFR_OFF));  
 end
 
 figure; subplot(1,2,1);
@@ -385,7 +433,7 @@ hold off; axis square
 xlabel('Sparseness OFF')
 ylabel('Sparseness ON')
 title('Sparseness')
-set(gca,'TickDir','out','XTick',[0 0.5 1])
+set(gca,'TickDir','out','XTick',[0 0.5 1],'YTick',[0 0.5 1])
 [p_sparse, h_sparse] = signrank(SidxOFF, SidxON);
 
 subplot(1,2,2);
@@ -396,16 +444,17 @@ ylabel('Sparseness')
 set(gca, 'XTickLabels',{'OFF';'ON'},'TickDir','out','YLim',[0 1]); axis square
 
 suptitle(TITLE)
-cd(FigOutput)
+
 set(gcf,'PaperPositionMode','auto');         
 set(gcf,'PaperOrientation','landscape');
 set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[800 400]);
 set(gcf,'Position',[0 0 800 400]);
-print(['sparseness_' TITLE],'-dpdf','-r400')
+%cd(FigOutput)
+%print(['sparseness_' TITLE],'-dpdf','-r400')
 
-cd(FileOutput)
-save(TITLE,'h_sparse','p_sparse','SidxON','SidxOFF','-append')
+%cd(FileOutput)
+%save(TITLE,'h_sparse','p_sparse','SidxON','SidxOFF','-append')
 
 disp('*******************************************************************');
 disp(['6. Sparseness:         h = ' num2str(h_sparse) ' and p = ' num2str(p_sparse)]);
@@ -417,8 +466,8 @@ disp('*******************************************************************');
 %Identify neurons that show laser effect in spontaneous or tone-evoked
 
 fontname = 'Arial';
-set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k');
-
+set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k','defaultAxesFontSize',18);
+set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k','k'})
 %response for first laser stimulus
 
 %Calculate baseline variability
@@ -519,7 +568,7 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1000 1200]);
 set(gcf,'Position',[0 0 1000 1200]);
 suptitle(TITLE)
-cd(FigOutput)
+%cd(FigOutput)
 %print(['laser_' TITLE],'-dpdf','-r400')
 
 %Identify which cells show a laser effect in either direction
@@ -542,6 +591,7 @@ disp('*******************************************************************');
 %Calculate sparseness for cells that show change due to laser
 fontname = 'Arial';
 set(0,'DefaultAxesFontName',fontname,'DefaultTextFontName',fontname,'DefaultTextColor','k','defaultAxesFontSize',18);
+set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k','k'})
 
 %Load tuning curve parameters
 afo5 = load('D:\Code\TuningCurve\R407_pars'); %Load stimulus parameters
@@ -562,13 +612,14 @@ Time = Time(1:end-1);
 
 StimOrder_Laser = [Time(2:2:end); afo5.freqOrder(2:2:end); afo5.ampOrder(2:2:end)];
 StimOrder_NoLaser = [Time(1:2:end); afo5.freqOrder(1:2:end); afo5.ampOrder(1:2:end)];
+freqs = unique(afo5.freqOrder);
 
 
 cellidx{1} = GOODCELLall(SigCellmagDOWN,:);
 cellidx{2} = GOODCELLall(SigCellmagUP,:);
 cellidx{3} = GOODCELLall(SigCellspontDOWN,:);
 cellidx{4} = GOODCELLall(SigCellspontUP,:);
-for vv = 1:4
+for vv = 1%:4
     h1 = cellidx{vv};
     numcell = size(h1,1);
     FR_LASER_ALL = [];
@@ -625,9 +676,11 @@ for vv = 1:4
            mFR_ON(j) = mean(FR_LASER_ALL(j,v,241:290));
            mFR_OFF(j) = mean(FR_NOLASER_ALL(j,v,241:290));
        end
+        mFR_ON(freqs < 3000 | freqs > 70000) = [];
+        mFR_OFF(freqs < 3000 | freqs > 70000) = [];
 
-        LASERSidxON(v) = Sparseness(mFR_ON,nFreq);  
-        LASERSidxOFF(v) = Sparseness(mFR_OFF,nFreq);  
+        LASERSidxON(v) = Sparseness(mFR_ON,length(mFR_ON));  
+        LASERSidxOFF(v) = Sparseness(mFR_OFF,length(mFR_OFF));  
     end
 
 
@@ -657,11 +710,11 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[600 1000]);
 set(gcf,'Position',[0 0 600 1000]);
 suptitle([TITLE ': Affected cells'])
-cd(FigOutput)
-print(['LASERsparseness_' TITLE],'-dpdf','-r400')
+%cd(FigOutput)
+%print(['LASERsparseness_' TITLE],'-dpdf','-r400')
 
-cd(FileOutput)
-save(TITLE,'h_LASERsparse','p_LASERsparse','LASERSidxON','LASERSidxOFF','-append')
+%cd(FileOutput)
+%save(TITLE,'h_LASERsparse','p_LASERsparse','LASERSidxON','LASERSidxOFF','-append')
 
 disp('*******************************************************************');
 disp(['8. Sparseness of ' num2str(size(h1,1)) ' affected cells: h = ' num2str(h_LASERsparse) ' and p = ' num2str(p_LASERsparse)]);

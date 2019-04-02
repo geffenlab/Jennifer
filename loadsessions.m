@@ -235,15 +235,17 @@ elseif strcmp(cond,'all')
         if strcmp(mouseline,'som')
             if strcmp(loc,'ic')
                 TITLE = 'SOM + ArchT in IC';
-                MNum = [3139 3144 3163 3162 3164 3196];
+                MNum = [3139 3144 3163 3162 3164 3196 3236 3237];
                 Sesh = cell(1,length(MNum));
                 Sesh{1} = [2,3]; Sesh{2} = [2,3]; Sesh{3} = 2; Sesh{4} = 1; Sesh{5} = [1,2]; Sesh{6} = [1 2];
+                Sesh{7} = [1,2,3,4]; Sesh{8} = [1,2,3,4];
                 
             elseif strcmp(loc,'ac')
                 TITLE = 'SOM + ArchT in AC';
-                MNum = [3139 3144 3160 3163 3161 3162 3196];
+                MNum = [3139 3144 3160 3163 3161 3162 3196 3236 3237];
                 Sesh = cell(1,length(MNum));
                 Sesh{1} = [1]; Sesh{2} = [1]; Sesh{3} = [1,2]; Sesh{4} = 1; Sesh{5} = [1,2]; Sesh{6} = 2; Sesh{7} = [3,4];
+                Sesh{8} = [5,6]; Sesh{9} = [5,6];
                 
             end
         elseif strcmp(mouseline,'camk2')

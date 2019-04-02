@@ -43,7 +43,7 @@ StimOrder_Laser = [Time(2:2:end); StimOrder(:,2:2:end)];
 StimOrder_NoLaser = [Time(1:2:end); StimOrder(:,1:2:end)];
 
 
-for u = 1:length(MNum)  
+for u = 1%:length(MNum)  
     %Pull out data files for mice and session numbers of interest
     cd(['D:\Spikes\M' num2str(MNum(u)) '\TCs']);
     h1 = ls('data\TC003*01.mat');
@@ -51,7 +51,7 @@ for u = 1:length(MNum)
     h = h1(idxUSE,:);
     
     %Step 1: Use top 3 amplitudes, but must find the frequencies to use.   
-    nfreq = 50; %Number of frequencies to use in smoothes response
+    nfreq = 7; %Number of frequencies to use in smoothes response
     amps = 1;
     [LOCSon{u},LOCSoff{u}] = TC_Select_noGauss(MNum(u),h,nfreq,amps,0);
     
@@ -60,12 +60,12 @@ for u = 1:length(MNum)
     
     Win = 0.24; %Window (in seconds) around start of tone to look for spikes
     
-    for n = 1:3
-
+    for n = 1:3       
+        
         %Separate out spikes based on if during laser trials vs no laser trials
         LASER_SPIKE = cell(1,size(h,1));
         NOLASER_SPIKE = cell(1,size(h,1));
-        for v = 1:size(h,1) 
+        for v = 23%1:size(h,1) 
             match = strfind(h(v,:), '.');
             q = match(end);
             load(['D:\Spikes\M' num2str(MNum(u)) '\SpikeMat\TC003_LEFT-0' num2str(n) h(v,6:q-10) '.mat']); 
@@ -84,7 +84,7 @@ for u = 1:length(MNum)
         SpikeDataNoLaser = cell(1, size(h,1));
 
         clear LASER_SPIKE2 NOLASER_SPIKE2
-        for v = 1:size(h,1)
+        for v = 23%1:size(h,1)
             for w = 1:numel(LASER_SPIKE{v})
                 LASER_SPIKE2{v}{w} = [sort(LASER_SPIKE{v}{w}); w*ones(1,length(LASER_SPIKE{v}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
                 SpikeDataLaser{v} = [SpikeDataLaser{v} LASER_SPIKE2{v}{w}]; %Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)
@@ -105,8 +105,8 @@ for u = 1:length(MNum)
     allCELL{u} = h;
 end
 
-cd(FileOutput);
-save(TITLE,'TITLE','MNum','Sesh','allCELL','FR_LASER','FR_NOLASER','CellQ');
+%cd(FileOutput);
+%save(TITLE,'TITLE','MNum','Sesh','allCELL','FR_LASER','FR_NOLASER','CellQ');
 
 disp('*******************************************************************');
 disp(['2. FR smoothed for top ' num2str(nfreq) ' frequencies']);
@@ -136,7 +136,8 @@ for u = 1:length(MNum)
     idxGOOD{u} = NaN(1,numcellA);    
     for j = 1:numcellA
         if CellQ{u}(j) <= 4 && CellQ{u}(j) > 0 && ... %Use only good multi-units and single units
-            mean(FR_NOLASER{u,1}(j,240:290)) > (2*std(FR_NOLASER{u,1}(j,145:235)) + mean(FR_NOLASER{u,1}(j,145:235))); %Only use cells with ave tone-evoked FR higher than 2 std's above spontaneous
+            mean(FR_NOLASER{u,1}(j,240:290)) > (2*std(FR_NOLASER{u,1}(j,145:235)) + mean(FR_NOLASER{u,1}(j,145:235)))... %Only use cells with ave tone-evoked FR higher than 2 std's above spontaneous
+            %% && mean(FR_NOLASER{u,1}(j,145:235)) > 1 %Minimum FR of 1kHz
         
             idxGOOD{u}(j) = 1; %Identify usable cells
             
@@ -171,53 +172,55 @@ disp(['3. ' num2str(NumberOfCells) ' cells with tone response']);
 disp('*******************************************************************');
 
 %% Make plots
-% % ii = 1;
-% % % Filters = [0 7 50];
-% %  for n = 1%1%1%2:7
-% %      cd(['D:\Spikes\M' num2str(MNum(n)) '\'])
-% %      close all
-% %      numcell = length(IDX{n}); %Number of good cells over both animals
-% %      
-% % %      for i = 1:length(Filters)
-% % %          FR_Laser_M{i} = [FR_LASER{n,i}(ind_cell{n},:)];
-% % %          FR_NoLaser_M{i} = [FR_NOLASER{n,i}(ind_cell{n},:)];
-% % %      end
-% % % 
-% % %      %Take mean of laser and no laser across all 3 conditions
-% % %      FR_Laser_Mn = [];
-% % %      FR_NoLaser_Mn = [];
-% % %      for w = 1:length(ind_cell{n})
-% % %         FR_Laser_Mn(w,:) = mean([FR_Laser_M{1}(w,:); FR_Laser_M{2}(w,:)]);
-% % %         FR_NoLaser_Mn(w,:) = mean([FR_NoLaser_M{1}(w,:); FR_NoLaser_M{2}(w,:); FR_NoLaser_M{3}(w,:)]);
-% % %      end
-% %     
-% %     a = 3; b = 3; %Subplot dimensions (rows vs columns)
-% %     nplot = a*b; %number of plots per figure
-% %     nfig = ceil(length(IDX{n})./nplot); %Max number of figures needed to plot all cells from mouse n
-% % 
-% %     for xx = 1:nfig
-% %         for j = 1:numcell
-% %             if j < (xx*nplot + 1) && j > (xx - 1)*nplot
-% %                 figure(xx); 
-% %                 subplot(a,b,j - (xx-1)*nplot);
-% %                 plot(FR_NOLASER{n,ii}(IDX{n}(j),:),'k')
-% %                 hold on; plot(FR_LASER{n,ii}(IDX{n}(j),:),'m')
-% %                 MX = max([FR_NOLASER{n,ii}(IDX{n}(j),:) FR_LASER{n,ii}(IDX{n}(j),:)]); %Find max FR out of both laser and no laser
-% %                 %area([140 390],[MX MX],'LineStyle','none'); %Location of laser on
-% %                 %area([240 290],[MX MX],'LineStyle','none','FaceColor','r'); %Location of tone on
-% %                 alpha(0.2)
-% %                 hold off;
-% %                 title([GOODCELL{1}(j,7:19)]);
-% %                 xlabel('Time (ms)'); ylabel('FR (spikes/s)')
-% %                 box off
-% %                 
-% %             end
-% %             
-% %         end
-% %          set(gcf, 'PaperPositionMode', 'manual','PaperUnits', 'inches','PaperPosition',[0 0 16 12], 'PaperSize', [16 12], 'color', 'white');
-% %          %print('-djpeg','-r400', [num2str(MNum(n)) '_allstim-' num2str(xx)]);
-% %      end
-% % end
+ii = 3;
+% Filters = [0 7 50];
+ for n = 1%1%1%2:7
+     cd(['D:\Spikes\M' num2str(MNum(n)) '\'])
+     close all
+     numcell = length(IDX{n}); %Number of good cells over both animals
+     
+%      for i = 1:length(Filters)
+%          FR_Laser_M{i} = [FR_LASER{n,i}(ind_cell{n},:)];
+%          FR_NoLaser_M{i} = [FR_NOLASER{n,i}(ind_cell{n},:)];
+%      end
+% 
+%      %Take mean of laser and no laser across all 3 conditions
+%      FR_Laser_Mn = [];
+%      FR_NoLaser_Mn = [];
+%      for w = 1:length(ind_cell{n})
+%         FR_Laser_Mn(w,:) = mean([FR_Laser_M{1}(w,:); FR_Laser_M{2}(w,:)]);
+%         FR_NoLaser_Mn(w,:) = mean([FR_NoLaser_M{1}(w,:); FR_NoLaser_M{2}(w,:); FR_NoLaser_M{3}(w,:)]);
+%      end
+    
+    a = 3; b = 3; %Subplot dimensions (rows vs columns)
+    nplot = a*b; %number of plots per figure
+    nfig = ceil(length(IDX{n})./nplot); %Max number of figures needed to plot all cells from mouse n
+
+    for xx = 1:nfig
+        for j = 1:numcell
+            if j < (xx*nplot + 1) && j > (xx - 1)*nplot
+                figure(xx); 
+                subplot(a,b,j - (xx-1)*nplot);
+                plot(FR_NOLASER{n,ii}(IDX{n}(j),:),'k')
+                hold on; plot(FR_LASER{n,ii}(IDX{n}(j),:),'m')
+                MX = max([FR_NOLASER{n,ii}(IDX{n}(j),:) FR_LASER{n,ii}(IDX{n}(j),:)]); %Find max FR out of both laser and no laser
+                %area([140 390],[MX MX],'LineStyle','none'); %Location of laser on
+                %area([240 290],[MX MX],'LineStyle','none','FaceColor','r'); %Location of tone on
+                alpha(0.2)
+                hold off;
+                title([GOODCELL{1}(j,7:19)]);
+                xlabel('Time (ms)'); ylabel('FR (spikes/s)')
+                box off
+                
+            end
+            
+        end
+         set(gcf, 'PaperPositionMode', 'manual','PaperUnits', 'inches','PaperPosition',[0 0 16 12], 'PaperSize', [16 12], 'color', 'white');
+         %print('-djpeg','-r400', [num2str(MNum(n)) '_allstim-' num2str(xx)]);
+     end
+end
+
+
 %% ************************************************************************
 %  *****              4.CALCULATE AND PLOT SPARSENESS                 *****
 %  ************************************************************************
@@ -335,11 +338,11 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[800 1600]);
 set(gcf,'Position',[0 0 800 1600]);
 suptitle(TITLE)
-cd(FigOutput)
-print(['sparseness_' TITLE],'-dpdf','-r400')
+%cd(FigOutput)
+%print(['sparseness_' TITLE],'-dpdf','-r400')
 
-cd(FileOutput)
-save(TITLE,'h_sparse','p_sparse','SidxON','SidxOFF','-append')
+%cd(FileOutput)
+%save(TITLE,'h_sparse','p_sparse','SidxON','SidxOFF','-append')
 
 disp('*******************************************************************');
 disp(['4. Sparseness:         h = ' num2str(h_sparse) ' and p = ' num2str(p_sparse)]);
@@ -453,8 +456,8 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1000 1200]);
 set(gcf,'Position',[0 0 1000 1200]);
 suptitle(TITLE)
-cd(FigOutput)
-print(['laser_' TITLE],'-dpdf','-r400')
+%cd(FigOutput)
+%print(['laser_' TITLE],'-dpdf','-r400')
 
 %This for loop is because file names from kilosort are different length
 %from plexon so need to adjust to concatenate
@@ -612,8 +615,8 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[800 1600]);
 set(gcf,'Position',[0 0 800 1600]);
 suptitle([TITLE ': Affected cells'])
-cd(FigOutput)
-print(['LASERsparseness_' TITLE],'-dpdf','-r400')
+%cd(FigOutput)
+%print(['LASERsparseness_' TITLE],'-dpdf','-r400')
 
 cd(FileOutput)
 save(TITLE,'h_LASERsparse','p_LASERsparse','LASERSidxON','LASERSidxOFF','-append')
@@ -784,13 +787,16 @@ for n = 1:3
         fitted{n}(i,:) = mdl.Coefficients{2,1}*[0:0.05:1]+mdl.Coefficients{1,1};
     end
     
-    meanY = mean(fitted{n},1);
-    semY = std(fitted{n},[],1)./sqrt(size(fitted{n},1));
+    meanY = mean(linearparams{4}(:,n));
+    meanint = mean(linearparams{4}(:,n+3));
+    semY = std(linearparams{4}(:,n))./sqrt(linearparams{4}(:,n));
+    meanfit = meanY*[0:0.05:1] + meanint;
+    %semfit = semY*[0:0.05:1]
     subplot(1,3,n); plot([0:0.05:1],fitted{n}','Color', [0.8 0.8 0.8],'linewidth',2)
-    hold on; plot([0:0.05:1],meanY,'Color','r','linewidth',2); 
+    hold on; plot([0:0.05:1],meanfit,'Color','r','linewidth',2); 
     line([0 1],[0 1],'Color','k','linestyle','--');
-    plot([0:0.05:1],meanY + semY,'--r');
-    plot([0:0.05:1],meanY - semY,'--r');
+    %plot([0:0.05:1],meanfit + semY,'--r');
+    %plot([0:0.05:1],meanfit - semY,'--r');
     hold off;
     box off;
     set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
@@ -804,8 +810,8 @@ set(gcf,'PaperOrientation','landscape');
 set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1600 500]);
 set(gcf,'Position',[0 0 1600 500]);
-cd(FigOutput)
-print('LinFit_spontUP','-dpdf','-r400')
+%cd(FigOutput)
+%print('LinFit_spontUP','-dpdf','-r400')
 
 cd(FileOutput)
 save(TITLE,'LinearFits','linearparams','-append')
@@ -852,62 +858,62 @@ temp = vertcat(tempcell{:});
 Qcell = temp(horzcat(CellQ{:}) > 0 & horzcat(CellQ{:}) < 5,:);
 strfFR = NaN(size(Qcell,1),3);
 
-for u = 3%1:size(Qcell,1)
+for u = 1:size(Qcell,1)
     q = find(Qcell(u,:) == '.');
-    load(['DRC001-' Qcell(u,7:q-10) '.mat'])
-    load(['DRC001_LEFT-01-' Qcell(u,7:q-10) '.mat'])
-    
-%     %%%Load spike file here (also append cellInfo with STRFclust)%%%
-    spikes = SpikeData(3,:);
-    spikes(spikes >= stimdur) = [];
-
-        
-        BOOT = cell(bootstrap,4);
-        clust{1} = zeros(size(STAon,1),size(STAon,2),bootstrap); clust{2} = zeros(size(STAon,1),size(STAon,2),bootstrap); 
-        clust{3} = zeros(size(STAon,1),size(STAon,2),bootstrap); clust{4} = zeros(size(STAon,1),size(STAon,2),bootstrap);
-        for b = 1:bootstrap
-                randSTRFall = zeros(size(STAon,1),size(STAon,2),its);
-            fprintf('Generating random STA(s)...\n')
-            for i = 1:its
-                fprintf('Iteration %02d/%02d...\n',i,its);
-                % make a stim shuffle index
-                idx = randperm(size(params.dbs,2));
-                randparams.dbs = params.dbs(:,idx);
-                % make a new sta from shuffled stim
-                randSTRFall(:,:,i) = genSTRF(spikes,randparams,STAwin);
-            end
-            randSTRF = mean(randSTRFall,3); % get the mean matrix of the permutation - this is the noise
-        
-            BOOT{b,1} = calcSTRFcluster(STAon,randSTRF,sigma_b,p,tC);
-            BOOT{b,2} = calcSTRFcluster(-STAon,-randSTRF,sigma_b,p,tC);
-            BOOT{b,3} = calcSTRFcluster(STAoff3,randSTRF,sigma_b,p,tC);
-            BOOT{b,4} = calcSTRFcluster(-STAoff3,-randSTRF,sigma_b,p,tC);
-            clust{1}(:,:,b) = BOOT{b,1}.tCi.ClusMask;
-            clust{2}(:,:,b) = BOOT{b,2}.tCi.ClusMask;
-            clust{3}(:,:,b) = BOOT{b,3}.tCi.ClusMask;
-            clust{4}(:,:,b) = BOOT{b,4}.tCi.ClusMask;
-                
-%             STRFclustON.POS = calcSTRFcluster(STAon,randSTRF,sigma_b,p,tC);
-%             STRFclustON.NEG = calcSTRFcluster(-STAon,-randSTRF,sigma_b,p,tC);
-%             STRFclustOFF.POS = calcSTRFcluster(STAoff3,randSTRF,sigma_b,p,tC);
-%             STRFclustOFF.NEG = calcSTRFcluster(-STAoff3,-randSTRF,sigma_b,p,tC);
-            
-        end
-        
-        %Check for significance based on bootstrap and make new mask for
-        %significant pixels
-        bootThresh = 0.9; %Fraction
-        for i = 1:4
-            temp = sum(clust{i} > 0,3);
-            temp2 = temp;
-            temp2(temp2 < bootThresh*bootstrap) = 0;
-            MASK{i} = bwlabel(temp2);
-        end
-        STRFclustON.POS.tCi.ClusMask = MASK{1};  STRFclustON.POS.tCi.p = p; STRFclustON.POS.tCi.tC = tC; STRFclustON.POS.info.Clusterdata = unique(MASK{1}(:)); STRFclustON.POS.tCi.STA = BOOT{1,1}.tCi.STA;
-        STRFclustON.NEG.tCi.ClusMask = MASK{2}; STRFclustON.NEG.tCi.p = p; STRFclustON.NEG.tCi.tC = tC; STRFclustON.NEG.info.Clusterdata = unique(MASK{2}(:)); STRFclustON.NEG.tCi.STA = BOOT{1,2}.tCi.STA;
-        STRFclustOFF.POS.tCi.ClusMask = MASK{3}; STRFclustOFF.POS.tCi.p = p; STRFclustOFF.POS.tCi.tC = tC; STRFclustOFF.POS.info.Clusterdata = unique(MASK{3}(:)); STRFclustOFF.POS.tCi.STA = BOOT{1,3}.tCi.STA;
-        STRFclustOFF.NEG.tCi.ClusMask = MASK{4}; STRFclustOFF.NEG.tCi.p = p; STRFclustOFF.NEG.tCi.tC = tC; STRFclustOFF.NEG.info.Clusterdata = unique(MASK{4}(:)); STRFclustOFF.NEG.tCi.STA = BOOT{1,4}.tCi.STA;
-        
+% %     load(['DRC001-' Qcell(u,7:q-10) '.mat'])
+% %     load(['DRC001_LEFT-01-' Qcell(u,7:q-10) '.mat'])
+% %     
+% % %     %%%Load spike file here (also append cellInfo with STRFclust)%%%
+% %     spikes = SpikeData(3,:);
+% %     spikes(spikes >= stimdur) = [];
+% % 
+% %         
+% %         BOOT = cell(bootstrap,4);
+% %         clust{1} = zeros(size(STAon,1),size(STAon,2),bootstrap); clust{2} = zeros(size(STAon,1),size(STAon,2),bootstrap); 
+% %         clust{3} = zeros(size(STAon,1),size(STAon,2),bootstrap); clust{4} = zeros(size(STAon,1),size(STAon,2),bootstrap);
+% %         for b = 1:bootstrap
+% %                 randSTRFall = zeros(size(STAon,1),size(STAon,2),its);
+% %             fprintf('Generating random STA(s)...\n')
+% %             for i = 1:its
+% %                 fprintf('Iteration %02d/%02d...\n',i,its);
+% %                 % make a stim shuffle index
+% %                 idx = randperm(size(params.dbs,2));
+% %                 randparams.dbs = params.dbs(:,idx);
+% %                 % make a new sta from shuffled stim
+% %                 randSTRFall(:,:,i) = genSTRF(spikes,randparams,STAwin);
+% %             end
+% %             randSTRF = mean(randSTRFall,3); % get the mean matrix of the permutation - this is the noise
+% %         
+% %             BOOT{b,1} = calcSTRFcluster(STAon,randSTRF,sigma_b,p,tC);
+% %             BOOT{b,2} = calcSTRFcluster(-STAon,-randSTRF,sigma_b,p,tC);
+% %             BOOT{b,3} = calcSTRFcluster(STAoff3,randSTRF,sigma_b,p,tC);
+% %             BOOT{b,4} = calcSTRFcluster(-STAoff3,-randSTRF,sigma_b,p,tC);
+% %             clust{1}(:,:,b) = BOOT{b,1}.tCi.ClusMask;
+% %             clust{2}(:,:,b) = BOOT{b,2}.tCi.ClusMask;
+% %             clust{3}(:,:,b) = BOOT{b,3}.tCi.ClusMask;
+% %             clust{4}(:,:,b) = BOOT{b,4}.tCi.ClusMask;
+% %                 
+% % %             STRFclustON.POS = calcSTRFcluster(STAon,randSTRF,sigma_b,p,tC);
+% % %             STRFclustON.NEG = calcSTRFcluster(-STAon,-randSTRF,sigma_b,p,tC);
+% % %             STRFclustOFF.POS = calcSTRFcluster(STAoff3,randSTRF,sigma_b,p,tC);
+% % %             STRFclustOFF.NEG = calcSTRFcluster(-STAoff3,-randSTRF,sigma_b,p,tC);
+% %             
+% %         end
+% %         
+% %         %Check for significance based on bootstrap and make new mask for
+% %         %significant pixels
+% %         bootThresh = 0.9; %Fraction
+% %         for i = 1:4
+% %             temp = sum(clust{i} > 0,3);
+% %             temp2 = temp;
+% %             temp2(temp2 < bootThresh*bootstrap) = 0;
+% %             MASK{i} = bwlabel(temp2);
+% %         end
+% %         STRFclustON.POS.tCi.ClusMask = MASK{1};  STRFclustON.POS.tCi.p = p; STRFclustON.POS.tCi.tC = tC; STRFclustON.POS.info.Clusterdata = unique(MASK{1}(:)); STRFclustON.POS.tCi.STA = BOOT{1,1}.tCi.STA;
+% %         STRFclustON.NEG.tCi.ClusMask = MASK{2}; STRFclustON.NEG.tCi.p = p; STRFclustON.NEG.tCi.tC = tC; STRFclustON.NEG.info.Clusterdata = unique(MASK{2}(:)); STRFclustON.NEG.tCi.STA = BOOT{1,2}.tCi.STA;
+% %         STRFclustOFF.POS.tCi.ClusMask = MASK{3}; STRFclustOFF.POS.tCi.p = p; STRFclustOFF.POS.tCi.tC = tC; STRFclustOFF.POS.info.Clusterdata = unique(MASK{3}(:)); STRFclustOFF.POS.tCi.STA = BOOT{1,3}.tCi.STA;
+% %         STRFclustOFF.NEG.tCi.ClusMask = MASK{4}; STRFclustOFF.NEG.tCi.p = p; STRFclustOFF.NEG.tCi.tC = tC; STRFclustOFF.NEG.info.Clusterdata = unique(MASK{4}(:)); STRFclustOFF.NEG.tCi.STA = BOOT{1,4}.tCi.STA;
+% %         
         %Plot masks for positive lobe just to check if cluster test seems
         %reasonable
 % % %         MM = max(max([STAon;STAoff3]));
@@ -947,29 +953,29 @@ for u = 3%1:size(Qcell,1)
 % % % %         
 % % % %         save(['DRC001-' Qcell(u,7:q-10) '.mat'],'STRFclustON','STRFclustOFF','-append')
 % % % %         
-% % % %         for ii = 1:nFiles
-% % % % 
-% % % %             load(['SpikeMat\DRC001_LEFT-0' num2str(ii) '-' Qcell(u,7:q-10) '.mat']); %Load spike times 
-% % % % 
-% % % %             spikes = SpikeData(3,:);
-% % % %             spikes(spikes >= stimdur) = [];
-% % % %             SpikeTmod = mod(spikes,1);
-% % % %             SpikeFR(ii,:) = smoothFRx4(SpikeTmod,stimdur,0.001,[0 1],5);
-% % % %         end
-% % % %         tempFR = mean(SpikeFR,1);
-% % % %         strfFR(u,1) = mean(tempFR(500:750)); %Laser ON firing rate
-% % % %         strfFR(u,2) = mean(tempFR(1:499)); %Laser OFF firing rate
-% % % %         strfFR(u,3) = std(tempFR(1:499));     
+        for ii = 1:nFiles
+
+            load(['SpikeMat\DRC001_LEFT-0' num2str(ii) '-' Qcell(u,7:q-10) '.mat']); %Load spike times 
+
+            spikes = SpikeData(3,:);
+            spikes(spikes >= stimdur) = [];
+            SpikeTmod = mod(spikes,1);
+            SpikeFR(ii,:) = smoothFRx4(SpikeTmod,stimdur,0.001,[0 1],5);
+        end
+        tempFR = mean(SpikeFR,1);
+        strfFR(u,1) = mean(tempFR(500:750)); %Laser ON firing rate
+        strfFR(u,2) = mean(tempFR(1:499)); %Laser OFF firing rate
+        strfFR(u,3) = std(tempFR(1:499));     
 
 end
-% % % % Thresh = 1;
-% % % % delta = strfFR(:,1) - (strfFR(:,2) + Thresh*strfFR(:,3));
-% % % % strfUP = find(delta > 0);
-% % % % strfcellUP = Qcell(strfUP,:);
-% % % % delta = (strfFR(:,2) - Thresh*strfFR(:,3)) - strfFR(:,1);
-% % % % strfDOWN = find(delta > 0);
-% % % % strfcellDOWN = Qcell(strfDOWN,:);
-% % % % 
-% % % % cd(FileOutput)
-% % % % save(TITLE,'strfcellDOWN','strfcellUP','strfFR','-append')
+Thresh = 1;
+delta = strfFR(:,1) - (strfFR(:,2) + Thresh*strfFR(:,3));
+strfUP = find(delta > 0);
+strfcellUP = Qcell(strfUP,:);
+delta = (strfFR(:,2) - Thresh*strfFR(:,3)) - strfFR(:,1);
+strfDOWN = find(delta > 0);
+strfcellDOWN = Qcell(strfDOWN,:);
+
+cd(FileOutput)
+save(TITLE,'strfcellDOWN','strfcellUP','strfFR','-append')
 
