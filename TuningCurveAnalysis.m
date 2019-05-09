@@ -238,7 +238,7 @@ cellTTall2(badIDX) = [];
 
 NumberOfCellsUse = length(spontOFFall2);
 
-save(TITLE,'GOODCELLall','magONall2','magOFFall2','spontONall2','spontOFFall2','Thresh','cellTTall2','-append')
+%save(TITLE,'GOODCELLall','magONall2','magOFFall2','spontONall2','spontOFFall2','Thresh','cellTTall2','-append')
 
 disp('*******************************************************************');
 disp(['4. ' num2str(NumberOfCellsUse) ' usable cells']);
