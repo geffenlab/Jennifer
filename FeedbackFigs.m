@@ -514,29 +514,34 @@ end
 
 onsets = {'-100 ms','-20 ms', '+8 ms'};
 
-% % fitted = LinearFits.magDOWN;
-% % for n = 1:3
-% %     meanY = mean(fitted{n},1);
-% %     semY = std(fitted{n},[],1)./sqrt(size(fitted{n},1));
-% %     subplot(1,3,n); plot([0:0.05:1],fitted{n}','Color', [0.8 0.8 0.8],'linewidth',2)
-% %     hold on; plot([0:0.05:1],meanY,'Color','r','linewidth',2); 
-% %     line([0 1],[0 1],'Color','k','linestyle','--');
-% %     plot([0:0.05:1],meanY + semY,'--r');
-% %     plot([0:0.05:1],meanY - semY,'--r');
-% %     hold off;
-% %     box off;
-% %     set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
-% %     title(['Laser Onset: ' onsets{n}]);
-% % end
-% % 
-% % suptitle('Feedback Affected Cells: Response Mag DECREASE')
-% % set(gcf,'PaperPositionMode','auto');         
-% % set(gcf,'PaperOrientation','landscape');
-% % set(gcf,'PaperUnits','points');
-% % set(gcf,'PaperSize',[1600 500]);
-% % set(gcf,'Position',[0 0 1600 500]);
-% % cd(FigOut)
-% % print(['LinFit_magDOWN_' opsin],'-dpdf','-r400')
+
+
+suptitle('Feedback Affected Cells: Response Mag DECREASE')
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1600 500]);
+set(gcf,'Position',[0 0 1600 500]);
+cd(FigOut)
+
+fitted = LinearFits.magDOWN;
+for n = 1:3
+    meanY = mean(fitted{n},1);
+    med_int(n) = prctile(linearparams{1}(:,n+3),50);
+    med_slope(n) = prctile(linearparams{1}(:,n),50);
+    med_line = med_slope(n)*[0:0.05:1]+ med_int(n);
+    semY = std(fitted{n},[],1)./sqrt(size(fitted{n},1));
+    subplot(1,3,n); plot([0:0.05:1],fitted{n}','Color', [0.8 0.8 0.8],'linewidth',2)
+    hold on; plot([0:0.05:1],med_line,'Color','r','linewidth',2); 
+    line([0 1],[0 1],'Color','k','linestyle','--');
+    plot([0:0.05:1],med_line + semY,'--r');
+    plot([0:0.05:1],med_line - semY,'--r');
+    hold off;
+    box off;
+    set(gca,'TickDir','out'); xlabel('Normalized FR OFF'); ylabel('Normalized FR ON');
+    title(['Laser Onset: ' onsets{n}]);
+end
+print(['LinFit_magDOWN_' opsin],'-dpdf','-r400')
 % % 
 % % 
 % % fitted = LinearFits.magUP;
