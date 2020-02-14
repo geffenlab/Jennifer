@@ -3,8 +3,8 @@
 %  ************************************************************************
 % Load mouse numbers and session numbers for particular set of experimental
 % conditions.
-opsin = 'chr2';
-loc = 'ic';
+opsin = 'archt';
+loc = 'ac';
 
 [MNum, Sesh, TITLE] = loadsessions2(opsin,loc);
 
@@ -43,7 +43,7 @@ StimOrder_Laser = [Time(2:2:end); StimOrder(:,2:2:end)];
 StimOrder_NoLaser = [Time(1:2:end); StimOrder(:,1:2:end)];
 
 
-for u = 1%:length(MNum)  
+for u = 1:length(MNum)  
     %Pull out data files for mice and session numbers of interest
     cd(['D:\Spikes\M' num2str(MNum(u)) '\TCs']);
     h1 = ls('data\TC003*01.mat');
@@ -51,7 +51,7 @@ for u = 1%:length(MNum)
     h = h1(idxUSE,:);
     
     %Step 1: Use top 3 amplitudes, but must find the frequencies to use.   
-    nfreq = 7; %Number of frequencies to use in smoothes response
+    nfreq = 50; %Number of frequencies to use in smoothes response
     amps = 1;
     [LOCSon{u},LOCSoff{u}] = TC_Select_noGauss(MNum(u),h,nfreq,amps,0);
     
@@ -65,7 +65,7 @@ for u = 1%:length(MNum)
         %Separate out spikes based on if during laser trials vs no laser trials
         LASER_SPIKE = cell(1,size(h,1));
         NOLASER_SPIKE = cell(1,size(h,1));
-        for v = 23%1:size(h,1) 
+        for v = 1:size(h,1) 
             match = strfind(h(v,:), '.');
             q = match(end);
             load(['D:\Spikes\M' num2str(MNum(u)) '\SpikeMat\TC003_LEFT-0' num2str(n) h(v,6:q-10) '.mat']); 
@@ -84,7 +84,7 @@ for u = 1%:length(MNum)
         SpikeDataNoLaser = cell(1, size(h,1));
 
         clear LASER_SPIKE2 NOLASER_SPIKE2
-        for v = 23%1:size(h,1)
+        for v = 1:size(h,1)
             for w = 1:numel(LASER_SPIKE{v})
                 LASER_SPIKE2{v}{w} = [sort(LASER_SPIKE{v}{w}); w*ones(1,length(LASER_SPIKE{v}{w}))]; %Add a "trial #" so final format will be similar to SpikeData arrays
                 SpikeDataLaser{v} = [SpikeDataLaser{v} LASER_SPIKE2{v}{w}]; %Concatenate "trials" to format like SpikeData(3,:) and SpikeData(4,:)

@@ -165,8 +165,8 @@ cellTTall = [cellTT{:}];
 
 
 NumberOfCells = length([IDX{:}]);
-cd(FileOutput)
-save(TITLE,'GOODCELL','IDX','magONall','magOFFall','spontONall','spontOFFall','spontIDX','toneIDX','cellTTall','-append')
+%cd(FileOutput)
+%save(TITLE,'GOODCELL','IDX','magONall','magOFFall','spontONall','spontOFFall','spontIDX','toneIDX','cellTTall','-append')
 
 disp('*******************************************************************');
 disp(['3. ' num2str(NumberOfCells) ' cells with tone response']);

@@ -88,7 +88,7 @@ for u = 1:length(SpkCount_NoLaser_Spont)
                 corr_Laser_Tone{idx}(i,j) = corr(2);
             end
         end
-        %Turn upper triangular matrix into full matrix
+        %Turn upper triangular matrix into full matrix (for visualization)
         corr_NoLaser_Spont{idx} = corr_NoLaser_Spont{idx} + corr_NoLaser_Spont{idx}' - diag(diag(corr_NoLaser_Spont{idx}));
         corr_Laser_Spont{idx} = corr_Laser_Spont{idx} + corr_Laser_Spont{idx}' - diag(diag(corr_Laser_Spont{idx}));
         corr_NoLaser_Tone{idx} = corr_NoLaser_Tone{idx} + corr_NoLaser_Tone{idx}' - diag(diag(corr_NoLaser_Tone{idx}));
@@ -153,12 +153,14 @@ for v = 1:length(corr_NoLaser_Spont)
 
 end
 figure; 
+
 subplot(2,2,1); histogram(corr_NoLaser_Tone_Dist,25,'EdgeColor','none');
 hold on; histogram(corr_Laser_Tone_Dist,25,'FaceColor','k','EdgeColor','none');%alpha(0.5);
 line([mean(corr_NoLaser_Tone_Dist) mean(corr_NoLaser_Tone_Dist)],[0 100],'LineStyle','--','Color','b');
 line([mean(corr_Laser_Tone_Dist) mean(corr_Laser_Tone_Dist)],[0 100],'LineStyle','--','Color','k');
 title('Tone ON (black) vs OFF (blue)'); xlabel('Correlation'); ylabel('# of unit pairs')
 box off; axis tight; set(gca,'tickdir','out','xlim',[-1 1],'xtick',[-1 -0.5 0 0.5 1])
+
 subplot(2,2,2); histogram(corr_NoLaser_Spont_Dist,25,'EdgeColor','none');
 hold on; histogram(corr_Laser_Spont_Dist,25,'FaceColor','k','EdgeColor','none');%alpha(0.5);
 line([nanmean(corr_NoLaser_Spont_Dist) nanmean(corr_NoLaser_Spont_Dist)],[0 100],'LineStyle','--','Color','b');
@@ -170,6 +172,7 @@ subplot(2,2,3); histogram(corr_Laser_Tone_Dist - corr_NoLaser_Tone_Dist,25,'Edge
 line([mean(corr_Laser_Tone_Dist - corr_NoLaser_Tone_Dist) mean(corr_Laser_Tone_Dist - corr_NoLaser_Tone_Dist)],[0 100],'LineStyle','--','Color','b');
 title('Tone Diff (ON - OFF)');xlabel('Correlation difference (ON - OFF)'); ylabel('# of unit pairs')
 box off; axis tight; set(gca,'tickdir','out','xlim',[-1 1],'xtick',[-1 -0.5 0 0.5 1])
+
 subplot(2,2,4); histogram(corr_Laser_Spont_Dist - corr_NoLaser_Spont_Dist,25,'EdgeColor','none');
 line([nanmean(corr_Laser_Spont_Dist - corr_NoLaser_Spont_Dist) nanmean(corr_Laser_Spont_Dist - corr_NoLaser_Spont_Dist)],[0 100],'LineStyle','--','Color','b');
 title('Spont Diff (ON - OFF)');xlabel('Correlation difference (ON - OFF)'); ylabel('# of unit pairs')
@@ -181,5 +184,5 @@ set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1000 600]);
 set(gcf,'Position',[0 0 1000 600]);
 
-cd(FigOut);
-print('NoiseCorrelation','-dpdf','-r400')
+%cd(FigOut);
+%print('NoiseCorrelation','-dpdf','-r400')

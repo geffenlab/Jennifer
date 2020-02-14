@@ -96,8 +96,8 @@ for ex = 1:length(EX)
     set(gcf,'Position',[0 0 1600 800]);
     set(gcf,'renderer','painters');
     pause(1)
-    cd(FigOut)
-    print(['SilenceExample' num2str(ex) '_' opsin],'-dpdf','-r400')
+    %cd(FigOut)
+    %print(['SilenceExample' num2str(ex) '_' opsin],'-dpdf','-r400')
 
 end
 
@@ -141,7 +141,8 @@ for i = 1:length(Stim)
     c = histc(SilenceDEV(:,i),edges);
     silence_mean(i) = nanmean(SilenceDEV(:,i));
     silence_stdev = nanstd(SilenceDEV(:,i));
-    [h_silence(i),p_silence(i)] = kstest((SilenceDEV(:,i)-silence_mean(i))/silence_stdev);
+    %[h_silence(i),p_silence(i)] = kstest((SilenceDEV(:,i)-silence_mean(i))/silence_stdev);
+    [p_silence(i),h_silence(i)] = signrank(SilenceON(:,i),SilenceOFF(:,i));
     silence_median(i) = nanmedian(SilenceDEV(:,i));
     bar(edges,c,'EdgeColor','none')
     line([silence_mean(i) silence_mean(i)],[0 max(c)],'color','k','linestyle','--')
@@ -151,17 +152,43 @@ for i = 1:length(Stim)
     ylabel('cell count')
     title(StimTitle{i});
 end
+
 set(gcf,'PaperPositionMode','auto');         
 set(gcf,'PaperOrientation','landscape');
 set(gcf,'PaperUnits','points');
 set(gcf,'PaperSize',[1600 1000]);
 set(gcf,'Position',[0 0 1600 1000]);
 suptitle('Silence + Laser distributions')
+
+%cd(FigOut)
+%print(['SilenceDistrib_' opsin],'-dpdf','-r400')
+
+figure;
+for i = 1:length(Stim)
+    subplot(2,2,i);
+   
+    [p_silence(i),h_silence(i)] = signrank(SilenceON(:,i),SilenceOFF(:,i));
+    scatter(SilenceOFF(:,i),SilenceON(:,i),25,'filled')
+    hold on;
+    max1 = nanmax(SilenceOFF(:,i));
+    max2 = nanmax(SilenceON(:,i));
+    line([0 nanmax(max1,max2)],[0 nanmax(max1,max2)],'linestyle','--','color','k');
+    set(gca,'TickDir','out'); box off;
+    xlabel('Laser OFF'); ylabel('Laser ON');
+    title(StimTitle{i});
+    axis square; axis tight
+end
+set(gcf,'PaperPositionMode','auto');         
+set(gcf,'PaperOrientation','landscape');
+set(gcf,'PaperUnits','points');
+set(gcf,'PaperSize',[1600 1000]);
+set(gcf,'Position',[0 0 1600 1000]);
+suptitle('Silence + Laser scatter')
 %cd(FileOut)
 %save(TITLE,'h_silence','p_silence','silence_mean','silence_median','-append')
-
 cd(FigOut)
-print(['SilenceDistrib_' opsin],'-dpdf','-r400')
+print(['SilenceScatter_' opsin],'-dpdf','-r400')
+
 
 
 %% ************************************************************************
@@ -220,7 +247,7 @@ for u = 1:size(Qcell,1)
     q = find(Qcell(u,:) == '.');
     if exist(['R400-' Qcell(u,7:q - 10) '.mat'],'file')
         load(['R400-' Qcell(u,7:q - 10) '.mat']);
-    end
+
     if ~isempty(SpikeData)
         idxOFF1 = find(SpikeData(3,:) > 0 & SpikeData(3,:) < 1);
         idxOFF2 = find(SpikeData(3,:) > 2 & SpikeData(3,:) < 3);
@@ -240,6 +267,7 @@ for u = 1:size(Qcell,1)
             ClickON(u) = mean(smoothON([1:50 100:150 200:250 300:350 400:450 500:550]));
         end
         
+    end
     end
     
 end
@@ -900,6 +928,7 @@ for u = 1:size(strfcellUP,1)
     q = find(strfcellUP(u,:) == '.');
     load(['DRC001-' strfcellUP(u,7:q-10) '.mat']);
     %First need to match clusters in OFF and ON conditions
+    
     clustOFF = STRFclustOFF.POS.params.data(:,1);
     if clustOFF ~=0
         tempOFFparams = STRFclustOFF.POS.params.data;
